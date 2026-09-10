@@ -216,6 +216,57 @@ export class RefusalPhrase {
      * exceção, ela paga o que a fatia vizinha deixou.
      */
     new FixedRefusalRule("MENTORING_DATE_IN_FUTURE", "refusal.mentoringDateInFuture"),
+
+    /**
+     * AS RECUSAS DE ATO — o maior bloco da dívida, e o único que a tela não
+     * podia pagar sozinha.
+     *
+     * Treze classes publicavam o MESMO código (`FORBIDDEN`) com treze frases
+     * diferentes. Uma regra por código teria colapsado as treze numa só, e o
+     * dono foi explícito sobre o custo: a recusa de ATO existe para dizer à
+     * pessoa o que fazer sobre uma coisa que está na frente dela (regra 18,
+     * decisão 3). Por isso o conserto foi do BACKEND e veio em fatia própria —
+     * cada recusa de ato ganhou o próprio código —, e só depois dele a
+     * política aqui tem por onde escolher a frase.
+     *
+     * O que NÃO entrou, e é a fronteira da mesma regra: as recusas de
+     * ALCANCE. Elas não ganham código nem frase — respondem o "não
+     * encontrado" byte a byte (decisão 2), e é por isso que a única regra que
+     * as alcança é a do `NOT_FOUND`, lá em cima.
+     */
+    new FixedRefusalRule(
+      "ASSESSMENT_WRITING_RESERVED_TO_LEAD",
+      "refusal.assessmentWritingReservedToLead",
+    ),
+    new FixedRefusalRule(
+      "ASSESSMENT_COMMENT_RESERVED_TO_AUTHOR",
+      "refusal.assessmentCommentReservedToAuthor",
+    ),
+    new FixedRefusalRule(
+      "ASSESSMENT_TRANSITION_NOT_IN_THIS_STAGE",
+      "refusal.assessmentTransitionNotInThisStage",
+    ),
+    new FixedRefusalRule(
+      "ASSESSMENT_FIELD_NOT_IN_ASSESSMENT",
+      "refusal.assessmentFieldNotInAssessment",
+    ),
+    new FixedRefusalRule("CALIBRATION_RESERVED_TO_MANAGER", "refusal.calibrationReservedToManager"),
+    new FixedRefusalRule("AUDIT_TRAIL_RESERVED_TO_ADMIN", "refusal.auditTrailReservedToAdmin"),
+    new FixedRefusalRule("PLAN_WRITING_RESERVED_TO_LEAD", "refusal.planWritingReservedToLead"),
+    new FixedRefusalRule(
+      "PLAN_CONCLUSION_RESERVED_TO_LEAD",
+      "refusal.planConclusionReservedToLead",
+    ),
+    new FixedRefusalRule("PLAN_DECISION_RESERVED_TO_LEAD", "refusal.planDecisionReservedToLead"),
+    new FixedRefusalRule("PLAN_REOPENING_RESERVED_TO_LEAD", "refusal.planReopeningReservedToLead"),
+    new FixedRefusalRule(
+      "LEARNING_PATH_CREATION_RESERVED_TO_LEAD",
+      "refusal.learningPathCreationReservedToLead",
+    ),
+    new FixedRefusalRule(
+      "LEARNING_PATH_PROGRESS_RESERVED_TO_OWNER",
+      "refusal.learningPathProgressReservedToOwner",
+    ),
   ];
 
   /**

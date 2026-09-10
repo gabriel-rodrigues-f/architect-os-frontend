@@ -87,11 +87,14 @@ const NA_PORTA: readonly string[] = [
  *
  * O grosso do que sobra tem dois nomes:
  *
- *  - **`FORBIDDEN`, 13 classes com 13 frases diferentes.** Traduzir por código
- *    colapsaria as treze numa só, e o dono foi explícito sobre o custo disso:
- *    a recusa de ATO existe para dizer à pessoa o que fazer (regra 18, decisão
- *    3). O conserto é do BACKEND e é fatia própria — cada recusa de ato ganha
- *    o próprio código —, não uma escolha desta tela.
+ *  - ~~**`FORBIDDEN`, 13 classes com 13 frases diferentes.**~~ **PAGO** pela
+ *    fatia RECUSAS (2026-09-10), e pago onde este teste mandava: no BACKEND.
+ *    Traduzir por código teria colapsado as treze numa só, e o dono foi
+ *    explícito sobre o custo disso — a recusa de ATO existe para dizer à
+ *    pessoa o que fazer (regra 18, decisão 3). Cada recusa de ato ganhou o
+ *    próprio código; a política desta tela só entrou depois. O que sobrou do
+ *    bloco são as três recusas de ALCANCE que ainda respondem 403, e o
+ *    conserto delas é outro: virar 404, byte a byte igual ao inexistente.
  *  - **as recusas de negócio de cada módulo** (409 e 400, sobretudo): elas
  *    dizem regra de produto por extenso, em prosa escrita para a pessoa. São
  *    tradução de texto, uma a uma, e cabem em fatias por módulo.
@@ -103,10 +106,33 @@ const NA_PORTA: readonly string[] = [
 // as duas recusas do selo de procedência do roteiro
 // (`SESSION_SCRIPT_PROVENANCE_INCOMPLETE` e `..._UNREADABLE`), os dois 400 em
 // prosa. Desceu porque o produto encolheu — nunca porque alguém traduziu duas.
-const DIVIDA_DE_HOJE = 92;
+// 92 → 82 (fatia RECUSAS, 2026-09-10): o bloco do `FORBIDDEN` foi pago, e o
+// conserto foi o que este teste mandava — do BACKEND. As doze recusas de ATO
+// que colapsavam no mesmo código ganharam código próprio
+// (`ASSESSMENT_WRITING_RESERVED_TO_LEAD`, `PLAN_REOPENING_RESERVED_TO_LEAD`,
+// `AUDIT_TRAIL_RESERVED_TO_ADMIN`…), e só então a política aqui teve por onde
+// escolher uma frase por ato. Dez delas contavam nesta linha; as outras duas
+// (`AssessmentNotOwnerError` e `PlanNotScopedError`) escrevem a frase por
+// constante estática e nunca chegaram a entrar na conta — mas entraram na
+// tela, e por isso sobem em `TRADUZIDAS_HOJE`.
+//
+// O que ficou de fora, e é a fronteira da regra 18, não teimosia: as três
+// recusas de ALCANCE que ainda respondem 403
+// (`ProfessionalTrajectoryNotVisibleError`, `TeamTransitionsNotVisibleError`,
+// `TeamEvolutionProfessionalsNotVisibleError`). Dar código próprio a elas
+// devolveria o oráculo; o conserto delas é virar 404, e está nomeado no
+// veredito (§7 item 6 e passo 5).
+const DIVIDA_DE_HOJE = 82;
 
-/** Quantas classes de recusa a política JÁ compõe na tela, nos dois idiomas. */
-const TRADUZIDAS_HOJE = 52;
+/**
+ * Quantas classes de recusa a política JÁ compõe na tela, nos dois idiomas.
+ *
+ * 52 → 68 no mesmo passo. O salto é maior que as dez da dívida porque este
+ * piso conta CLASSES traduzidas, não classes que escreviam frase: as doze de
+ * ato entram inteiras, e o 52 já estava defasado — era piso, e piso não
+ * acompanha sozinho.
+ */
+const TRADUZIDAS_HOJE = 68;
 
 const ORIGEM_DA_COPIA = "backend/tests/shared/errors/contrato-de-erro.fixture.json";
 
