@@ -1,6 +1,5 @@
 import {
   Activity,
-  BarChart3,
   Bell,
   CircleUser,
   BookMarked,
@@ -10,11 +9,9 @@ import {
   ClipboardCheck,
   Compass,
   FileText,
-  GitCompare,
   GraduationCap,
   Grid3x3,
   LayoutDashboard,
-  Layers,
   LibraryBig,
   ListOrdered,
   Map,
@@ -54,8 +51,6 @@ export interface NavItem {
   platformMetricsOnly?: boolean;
 
   teamRuleReachOnly?: boolean;
-
-  calibrationReachOnly?: boolean;
 
   teamCompositionReachOnly?: boolean;
 
@@ -176,18 +171,6 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: TrendingUp,
         teamAnalysisOnly: true,
       },
-      {
-        to: "/training-needs",
-        labelKey: "cap.tabs.collective",
-        icon: Layers,
-        teamAnalysisOnly: true,
-      },
-      {
-        to: "/compare",
-        labelKey: "cap.tabs.comparison",
-        icon: GitCompare,
-        teamAnalysisOnly: true,
-      },
     ],
   },
   {
@@ -284,12 +267,6 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Grid3x3,
         systemOperationOnly: true,
       },
-      {
-        to: "/calibration",
-        labelKey: "nav.calibration",
-        icon: BarChart3,
-        calibrationReachOnly: true,
-      },
       { to: "/teams", labelKey: "nav.teams", icon: Building2, peopleAdministrationOnly: true },
       {
         to: "/platform-metrics",
@@ -336,10 +313,6 @@ export class NavigationOfUser {
     if (item.systemOperationOnly && !(user && this.policy.operatesTheSystem(user))) return false;
     if (item.platformMetricsOnly && !(user && this.policy.readsPlatformMetrics(user))) return false;
     if (item.teamRuleReachOnly && !(user && this.policy.canConfigureAnyTeamRules(user))) {
-      return false;
-    }
-    if (item.calibrationReachOnly && !(user && this.policy.canCalibrate(user))) return false;
-    if (item.teamCompositionReachOnly && !(user && this.policy.canComposeAnyTeam(user))) {
       return false;
     }
     if (item.teamAnalysisOnly && !(user && this.policy.canAnalyzeTeam(user))) return false;

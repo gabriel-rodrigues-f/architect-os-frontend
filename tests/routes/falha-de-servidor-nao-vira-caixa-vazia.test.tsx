@@ -59,9 +59,7 @@ const fetchMock = vi.fn();
 
 const NoticesPage = NoticesRoute.options.component as () => ReactNode;
 
-const FALHA_DE_AVISOS = "Não foi possível carregar os avisos.";
 const CAIXA_VAZIA = "Nenhum aviso";
-const TENTAR_DE_NOVO = "Tentar novamente";
 const RECARREGAR = "Recarregar";
 const TELA_DE_QUEDA = "service-outage";
 

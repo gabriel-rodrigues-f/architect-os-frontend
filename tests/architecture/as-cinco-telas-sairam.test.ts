@@ -39,21 +39,20 @@ import pt from "@/locales/pt.json";
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 /**
- * O CATÁLOGO DO MENU É DE OUTRA FATIA, e a exceção é nomeada de propósito.
+ * A EXCEÇÃO DO CATÁLOGO MORREU NA INTEGRAÇÃO, e este comentário é a lápide.
  *
- * `navigation-catalog.ts` pertence à fatia `casca` nesta rodada. As três
- * entradas órfãs (`/training-needs`, `/compare`, `/calibration`) e as chaves
- * de rótulo delas (`cap.tabs.collective`, `cap.tabs.comparison`,
- * `nav.calibration`) ficam de pé aqui e saem lá, num passo só — mexer nelas
- * daqui seria conflito garantido na integração. Enquanto elas existirem, a
- * política `canCalibrate` também fica: é ela que a entrada consulta.
+ * Enquanto a fatia rodava, `navigation-catalog.ts` era de outro agente, e as
+ * três entradas órfãs — `/training-needs`, `/compare`, `/calibration` — mais as
+ * chaves de rótulo delas ficavam de pé aqui para não virar conflito. O
+ * orquestrador derrubou as três linhas ao integrar, junto com os ícones que
+ * ficaram sem uso e com a política `canCalibrate`, que só a entrada do menu
+ * consultava.
  *
- * O dia em que a `casca` derrubar as três linhas, esta exceção sai deste
- * arquivo e a varredura passa a cobrar o catálogo como cobra o resto.
+ * Sem exceção nenhuma: a varredura cobra o catálogo como cobra o resto.
  */
-const DA_FATIA_DA_CASCA = [join("src", "lib", "navigation-catalog.ts")];
+const DA_FATIA_DA_CASCA: string[] = [];
 
-const CHAVES_DO_MENU_ORFAO = ["cap.tabs.collective", "cap.tabs.comparison", "nav.calibration"];
+const CHAVES_DO_MENU_ORFAO: string[] = [];
 
 /**
  * As grafias de cada tela. `awaitingCalibration` e `dash.lead.

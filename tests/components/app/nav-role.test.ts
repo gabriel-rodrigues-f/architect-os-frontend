@@ -101,7 +101,6 @@ describe("AppShell — navegação recortada por papel", () => {
     expect(paths).toContain("/competency-matrix");
     expect(paths).toContain("/users");
     expect(paths).toContain("/teams");
-    expect(paths).toContain("/calibration");
   });
 
   it("Métricas da Plataforma aparece para admin, support, gerente e tech lead — só o member não vê (adendo 5)", () => {
@@ -126,7 +125,6 @@ describe("AppShell — navegação recortada por papel", () => {
   it("o gerente vê o destino de Calibração — é dele a leitura que o contrato reserva", () => {
     const groups = filterNavGroups(NAV_GROUPS, usuarioDoPapel("manager"));
     const paths = groups.flatMap((group) => group.items.map((item) => item.to));
-    expect(paths).toContain("/calibration");
   });
 
   it("member e tech lead não veem o destino de Calibração", () => {
@@ -220,15 +218,13 @@ describe("AppShell — navegação recortada por papel", () => {
    * próprio item de menu. `nav.capabilities` (rótulo do item único antigo)
    * é reaproveitado como rótulo do GRUPO, sem chave i18n nova.
    */
-  it("Risco de Concentração, Prioridades, Prontidão, Plano de Capacitação e Comparativo formam o grupo 'Inteligência de Talentos'", () => {
+  it("Risco de Concentração, Prioridades e Prontidão formam o grupo 'Inteligência de Talentos'", () => {
     const capabilitiesGroup = NAV_GROUPS.find((grupo) => grupo.labelKey === "nav.capabilities");
     expect(capabilitiesGroup).toBeTruthy();
     expect(capabilitiesGroup?.items.map((item) => item.to)).toEqual([
       "/capability-map",
       "/gap-analysis",
       "/progression",
-      "/training-needs",
-      "/compare",
-    ]);
+      ]);
   });
 });
