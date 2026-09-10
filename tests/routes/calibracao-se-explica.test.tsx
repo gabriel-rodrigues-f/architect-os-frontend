@@ -91,8 +91,8 @@ const montarTela = (routes: FetchRoute[]) => {
   renderWithApp(<CalibrationPage />);
 };
 
-const cartaoDe = (name: string) =>
-  screen.getByText(name).closest("[data-evaluator-card]") as HTMLElement;
+const linhaDe = (name: string) =>
+  screen.getByText(name).closest("[data-evaluator-row]") as HTMLElement;
 
 beforeEach(() => {
   window.localStorage.setItem("synapse:locale", "pt");
@@ -126,13 +126,20 @@ describe("a tela diz o que ela é: ela olha quem AVALIA", () => {
 });
 
 describe("os gráficos se explicam", () => {
+  /*
+   * As duas frases MUDARAM DE LUGAR em 2026-09-10, e não de existência.
+   * Repetidas dentro de cada avaliador eram o ruído que o dono recusou ("não
+   * transformar cada avaliador em um grande dashboard individual"); ditas uma
+   * vez no cabeçalho de colunas, valem para todas as linhas abaixo. O que o
+   * caso afirma continua sendo o mesmo: a tela DIZ o que o eixo conta e o que
+   * é L1…L5, em vez de deixar o leitor adivinhar.
+   */
   it("diz o que o eixo conta e o que é L1…L5 — nenhum dos dois tinha rótulo", async () => {
     montarTela([calibrationRoute, teamsRoute]);
 
     await screen.findByText("Marina Lopes");
-    const marina = cartaoDe("Marina Lopes");
-    expect(within(marina).getByText(/quantas notas/i)).toBeTruthy();
-    expect(within(marina).getByText(/nível de proficiência/i)).toBeTruthy();
+    expect(screen.getByText(/quantas notas/i)).toBeTruthy();
+    expect(screen.getByText(/nível de proficiência/i)).toBeTruthy();
   });
 
   it("o 'vs geral' nomeia o número contra o qual compara", async () => {
@@ -140,17 +147,27 @@ describe("os gráficos se explicam", () => {
 
     await screen.findByText("Marina Lopes");
     expect(
-      within(cartaoDe("Marina Lopes")).getByText(/\+0\.88 vs média geral \(3\.12\)/),
+      within(linhaDe("Marina Lopes")).getByText(/\+0\.88 vs média geral \(3\.12\)/),
     ).toBeTruthy();
   });
 
-  it("a linha de notas diz que ela é o PESO do avaliador na média", async () => {
+  /*
+   * A frase "20 notas em 4 avaliações — é o peso deste avaliador" virou DUAS
+   * COLUNAS, porque foi o que o dono pediu ao desenhar a linha: total de notas
+   * e avaliações são campos, não texto corrido. O PESO — o porquê de esses
+   * dois números estarem ali — continua escrito, uma vez, junto do cabeçalho.
+   */
+  it("os dois números do peso são campos da linha, e a tela explica o que eles pesam", async () => {
     montarTela([calibrationRoute, teamsRoute]);
 
     await screen.findByText("Marina Lopes");
-    const linha = within(cartaoDe("Marina Lopes")).getByText(/20 nota/);
-    expect(linha.textContent).toMatch(/4 avaliaç/);
-    expect(linha.textContent, "três avaliações não pesam como uma").toMatch(/peso/i);
+    const marina = within(linhaDe("Marina Lopes"));
+    expect(marina.getByTestId("evaluator-items").textContent).toBe("20");
+    expect(marina.getByTestId("evaluator-assessments").textContent).toBe("4");
+    expect(
+      screen.getByText(/peso de cada avaliador na média geral/i),
+      "três avaliações não pesam como uma",
+    ).toBeTruthy();
   });
 
   /**
@@ -161,18 +178,22 @@ describe("os gráficos se explicam", () => {
     montarTela([calibrationRoute, teamsRoute]);
 
     await screen.findByText("Marina Lopes");
-    expect(within(cartaoDe("Marina Lopes")).getByRole("status").textContent).toContain("0.50");
+    expect(within(linhaDe("Marina Lopes")).getByRole("status").textContent).toContain("0.50");
   });
 
-  it("quem não passa do limiar não acende — e o cartão explica isso no ?", async () => {
+  /*
+   * O "?" saiu de dentro de cada avaliador e foi para o cabeçalho da coluna de
+   * distribuição: um "?" por linha, repetindo o mesmo texto, era mais um dos
+   * enfeites que a densidade não comporta. O que ele explica é o mesmo.
+   */
+  it("quem não passa do limiar não acende — e a tela explica isso no ?", async () => {
     montarTela([calibrationRoute, teamsRoute]);
     const usuario = userEvent.setup();
 
     await screen.findByText("Ricardo Nunes");
-    const ricardo = cartaoDe("Ricardo Nunes");
-    expect(within(ricardo).queryByRole("status")).toBeNull();
+    expect(within(linhaDe("Ricardo Nunes")).queryByRole("status")).toBeNull();
 
-    await usuario.click(within(ricardo).getByRole("button", { name: /Como ler/ }));
+    await usuario.click(screen.getByRole("button", { name: /Como ler/ }));
     expect((await screen.findByText(/acende a partir de 0\.50/i)).textContent).toBeTruthy();
   });
 });
@@ -182,7 +203,7 @@ describe("o aviso é acionável: com quem falar e o que reconferir", () => {
     montarTela([calibrationRoute, teamsRoute]);
 
     await screen.findByText("Marina Lopes");
-    expect(within(cartaoDe("Marina Lopes")).getByRole("status").textContent).toContain(
+    expect(within(linhaDe("Marina Lopes")).getByRole("status").textContent).toContain(
       "Marina Lopes",
     );
   });
@@ -196,7 +217,7 @@ describe("o aviso é acionável: com quem falar e o que reconferir", () => {
     montarTela([calibrationRoute, teamsRoute]);
 
     await screen.findByText("Marina Lopes");
-    const aviso = within(cartaoDe("Marina Lopes")).getByRole("status").textContent ?? "";
+    const aviso = within(linhaDe("Marina Lopes")).getByRole("status").textContent ?? "";
     expect(aviso).toMatch(/9 nota/);
     expect(aviso).toContain("L4");
   });
@@ -207,7 +228,7 @@ describe("DEFEITO: o time aparecia como identificador cru", () => {
     montarTela([calibrationRoute, teamsRoute]);
 
     await screen.findByText("Marina Lopes");
-    const marina = cartaoDe("Marina Lopes");
+    const marina = linhaDe("Marina Lopes");
     expect(within(marina).getByText("Dados e Inteligência")).toBeTruthy();
     expect(marina.textContent).not.toContain("seed-completo-time-dados");
   });

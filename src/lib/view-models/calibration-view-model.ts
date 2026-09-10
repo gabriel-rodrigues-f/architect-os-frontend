@@ -126,6 +126,33 @@ export class CalibrationViewModel {
     return distribution[String(level) as keyof LevelDistribution];
   }
 
+  /**
+   * O TETO COMUM das barras: a maior contagem de um nível em qualquer
+   * avaliador do ciclo.
+   *
+   * Existe porque a tela é de COMPARAÇÃO (dono, 2026-09-10). Se cada linha
+   * escalasse pelo próprio máximo, 9 notas em L4 e 8 em L3 desenhariam a mesma
+   * altura em linhas vizinhas, e a "concentração excessiva num nível" — o
+   * primeiro dos cinco comportamentos que ele quer ver de relance — sumiria
+   * justamente na comparação. O número não é escolhido: é o maior que existe
+   * no recorte que o servidor mandou.
+   *
+   * As notas SEM AUTOR ficam de fora, e é de propósito: elas não são linha
+   * nenhuma, então esticariam a escala de todo mundo por um dado que a tela
+   * não desenha. O aviso de nota órfã continua contando essa história.
+   */
+  levelCeiling(snapshot: CalibrationSnapshot): number {
+    return snapshot.evaluators.reduce(
+      (highest, evaluator) =>
+        SCORE_LEVELS.reduce(
+          (best, level) =>
+            Math.max(best, CalibrationViewModel.countAt(evaluator.distribution, level)),
+          highest,
+        ),
+      0,
+    );
+  }
+
   scoreLevels(distribution: LevelDistribution): ScoreLevelRow[] {
     return SCORE_LEVELS.map((level) => ({
       level,

@@ -7,7 +7,8 @@ import {
   DataOriginCallout,
   EmptyState,
   EmptyStateCallToAction,
-  EvaluatorDistributionCard,
+  EvaluatorCalibrationHeader,
+  EvaluatorCalibrationRow,
   PageHeader,
   QuerySection,
   ScrollPane,
@@ -27,6 +28,7 @@ import { requireCalibrationReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { useStore } from "@/lib/store";
 import { CalibrationViewModel, TeamNames } from "@/lib/view-models";
+import type { CalibrationSnapshot } from "@/lib/gateways/calibration.gateway";
 
 export const Route = createFileRoute("/calibration")({
   head: () => ({
@@ -43,11 +45,13 @@ export const Route = createFileRoute("/calibration")({
   component: CalibrationPage,
 });
 
-const CARDS_SKELETON = (
-  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-    <div className="h-64 animate-pulse rounded-md bg-secondary" />
-    <div className="h-64 animate-pulse rounded-md bg-secondary" />
-    <div className="h-64 animate-pulse rounded-md bg-secondary" />
+/** O esqueleto imita o que vem: linhas baixas empilhadas, não cartões. */
+const ROWS_SKELETON = (
+  <div className="grid gap-2">
+    <div className="h-24 animate-pulse rounded-md bg-secondary" />
+    <div className="h-24 animate-pulse rounded-md bg-secondary" />
+    <div className="h-24 animate-pulse rounded-md bg-secondary" />
+    <div className="h-24 animate-pulse rounded-md bg-secondary" />
   </div>
 );
 
@@ -105,6 +109,35 @@ function useCalibrationViewModel(): CalibrationViewModel {
   return useMemo(
     () => new CalibrationViewModel(TeamNames.of(rosterOfTeams ?? [])),
     [rosterOfTeams],
+  );
+}
+
+/**
+ * A LISTA de avaliadores, em linhas.
+ *
+ * Existe como componente por causa do TETO: a escala das barras é comum a
+ * todas as linhas (`levelCeiling`), e o teto é do RECORTE, não da linha. Ele é
+ * calculado uma vez aqui e desce para todas — dentro do `map` ele seria
+ * recalculado a cada avaliador, e a leitura do código deixaria de dizer que a
+ * escala é uma só.
+ */
+function EvaluatorRows({ vm, data }: { vm: CalibrationViewModel; data: CalibrationSnapshot }) {
+  const ceiling = vm.levelCeiling(data);
+  const overallAverageLabel = vm.overallAverageLabel(data);
+  const thresholdLabel = vm.thresholdLabel();
+  return (
+    <ul>
+      {vm.evaluators(data).map((view) => (
+        <EvaluatorCalibrationRow
+          key={view.userId}
+          view={view}
+          scoreLevels={vm.scoreLevels(view.distribution)}
+          ceiling={ceiling}
+          overallAverageLabel={overallAverageLabel}
+          thresholdLabel={thresholdLabel}
+        />
+      ))}
+    </ul>
   );
 }
 
@@ -167,7 +200,7 @@ function CalibrationBoard() {
 
           <QuerySection
             query={query}
-            skeleton={CARDS_SKELETON}
+            skeleton={ROWS_SKELETON}
             errorMessage={t("calibration.error")}
           >
             {(data) => (
@@ -196,7 +229,7 @@ function CalibrationBoard() {
                   )
                 ) : (
                   <>
-                    <div className="mb-6 grid gap-4 sm:grid-cols-3">
+                    <div data-testid="calibration-kpis" className="mb-6 grid gap-4 sm:grid-cols-3">
                       <StatCard
                         label={t("calibration.kpi.overallAverage")}
                         value={
@@ -214,21 +247,21 @@ function CalibrationBoard() {
                         )}
                       />
                     </div>
+                    {/*
+                     * Dono (2026-09-10): *"Não transformar cada avaliador em
+                     * um grande dashboard individual. A prioridade é
+                     * comparação, densidade e leitura rápida."* Era uma grade
+                     * de até três cartões por fila; virou uma LISTA de linhas,
+                     * com o cabeçalho de colunas FORA da caixa que rola — ele
+                     * nomeia os campos das trinta linhas abaixo e não pode
+                     * subir junto com elas.
+                     */}
+                    <EvaluatorCalibrationHeader thresholdLabel={vm.thresholdLabel()} />
                     <ScrollPane
                       label={t("pane.calibrationCharts.label")}
                       height={PaneHeight.restOfPage()}
                     >
-                      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        {vm.evaluators(data).map((view) => (
-                          <EvaluatorDistributionCard
-                            key={view.userId}
-                            view={view}
-                            scoreLevels={vm.scoreLevels(view.distribution)}
-                            overallAverageLabel={vm.overallAverageLabel(data)}
-                            thresholdLabel={vm.thresholdLabel()}
-                          />
-                        ))}
-                      </div>
+                      <EvaluatorRows vm={vm} data={data} />
                     </ScrollPane>
                   </>
                 )}

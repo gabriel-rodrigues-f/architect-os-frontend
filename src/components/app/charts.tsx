@@ -43,11 +43,17 @@ interface ChartFrameProps {
 
   height: number;
 
-  isEmpty: boolean;
+  /**
+   * O gráfico não tem o que desenhar. Opcional porque nem todo gráfico decide
+   * isso por conta própria: na tira da calibração quem decide é a LINHA — um
+   * avaliador sem nota nenhuma não desenha barra, e a caixa tracejada dentro
+   * de uma linha densa seria justamente o segundo cartão que o dono recusou.
+   */
+  isEmpty?: boolean;
   /** A LINHA 1 do vazio, no molde da casa ("Nenhum nível registrado neste ciclo"). */
-  emptyMessage: string;
+  emptyMessage?: string;
   /** A LINHA 2: a regra de negócio que explica por que o gráfico está vazio. */
-  emptyHint: string;
+  emptyHint?: string;
 
   dataTable: ReactNode;
   children: ReactElement;
@@ -56,9 +62,9 @@ interface ChartFrameProps {
 function ChartFrame({
   label,
   height,
-  isEmpty,
-  emptyMessage,
-  emptyHint,
+  isEmpty = false,
+  emptyMessage = "",
+  emptyHint = "",
   dataTable,
   children,
 }: ChartFrameProps) {
@@ -429,6 +435,111 @@ export function LevelDistribution({
       }
     >
       <LevelDistributionFigure data={rows} label={label} />
+    </ChartFrame>
+  );
+}
+
+/**
+ * A MESMA distribuição por nível, mas COMPACTA e DENTRO DE UMA LINHA — dono,
+ * 2026-09-10: *"barras verticais compactas, eixo X de L1 a L5, valor absoluto
+ * no topo de cada barra, todos os níveis visíveis inclusive os zerados, sem
+ * rolagem horizontal, baixo e horizontalmente amplo, fundo integrado à linha,
+ * grade horizontal muito discreta."*
+ *
+ * Por que NÃO é o `LevelDistribution` com outra altura: aquele é um gráfico de
+ * biblioteca — eixo Y com marcas, tooltip, animação, margens — e nada disso
+ * cabe em 72 px de altura repetidos por avaliador. Aqui a régua do dono
+ * dispensa o eixo Y: o valor está escrito no topo de cada barra, que é mais
+ * exato do que ler uma marca, e o que sobra de espaço vai para a largura das
+ * barras, que é o que ele pediu.
+ *
+ * **O TETO É COMUM A TODAS AS LINHAS** (`ceiling`), e essa é a decisão que faz
+ * a tela responder ao pedido dele. Com escala por linha, 9 notas em L4 e 8 em
+ * L3 desenham a MESMA altura em linhas diferentes: "concentração excessiva num
+ * nível" e "distribuição muito diferente das demais" — dois dos cinco
+ * comportamentos que ele quer ver de relance — desaparecem exatamente na
+ * comparação que a tela existe para permitir. O teto não é inventado: é a
+ * maior contagem que existe no ciclo (`CalibrationViewModel.levelCeiling`).
+ *
+ * Nível zerado desenha barra de altura ZERO, com o `0` escrito acima da linha
+ * de base: é o dado — "este avaliador nunca usou este degrau". Avaliador sem
+ * nota NENHUMA é outra coisa, e nem chega aqui: quem decide é a linha.
+ */
+export function LevelDistributionStrip({
+  data,
+  ceiling,
+  height = 72,
+}: {
+  data: LevelDistributionRow[];
+  /** A maior contagem de QUALQUER avaliador do ciclo — a escala é comum. */
+  ceiling: number;
+  height?: number;
+}) {
+  const { t } = useI18n();
+  const label = t("chart.distribution.label");
+  const rows = data.map((row) => ({
+    level: row.level,
+    name: LEVEL_NAMES[row.level] ?? String(row.level),
+    count: row.count,
+  }));
+  const top = Math.max(ceiling, ...rows.map((row) => row.count), 1);
+
+  return (
+    <ChartFrame
+      label={label}
+      height={height}
+      dataTable={
+        <DataTable
+          caption={label}
+          columns={[t("chart.axis.level"), t("chart.axis.count")]}
+          rows={rows.map((row) => [row.name, row.count])}
+        />
+      }
+    >
+      <div data-level-chart className="flex h-full flex-col">
+        {/*
+         * O `pt-4` reserva a faixa em que o número mora, logo acima da sua
+         * barra: sem ela a barra mais alta empurraria o próprio rótulo para
+         * fora da caixa. As três linhas da grade são de baixo contraste e de
+         * 1 px — base, meio e teto —, e é toda a grade que o dono admitiu.
+         */}
+        <div className="relative flex flex-1 items-end gap-1 pt-4">
+          <div aria-hidden="true" className="absolute inset-x-0 top-4 h-px bg-border" />
+          <div aria-hidden="true" className="absolute inset-x-0 top-1/2 h-px bg-border" />
+          <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-px bg-border" />
+          {rows.map((row) => (
+            <div key={row.level} className="relative flex h-full min-w-0 flex-1 items-end">
+              <div
+                data-testid={`level-bar-${String(row.level)}`}
+                data-level={row.level}
+                data-count={row.count}
+                className="relative w-full rounded-t-sm"
+                style={{
+                  height: `${String((row.count / top) * 100)}%`,
+                  backgroundColor: "var(--chart-1)",
+                }}
+              >
+                <span
+                  data-testid={`level-value-${String(row.level)}`}
+                  className="absolute inset-x-0 -top-4 text-center text-meta tabular-nums text-foreground"
+                >
+                  {row.count}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-1 pt-1">
+          {rows.map((row) => (
+            <span
+              key={row.level}
+              className="min-w-0 flex-1 text-center text-meta tabular-nums text-muted-foreground"
+            >
+              {row.name}
+            </span>
+          ))}
+        </div>
+      </div>
     </ChartFrame>
   );
 }

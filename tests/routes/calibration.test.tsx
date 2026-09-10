@@ -139,25 +139,32 @@ describe("/calibration — distribuição de notas por avaliador", () => {
   it("quem passa do limiar leva o aviso de desvio; quem está na média, não", async () => {
     renderWithApp(<CalibrationPage />);
     await screen.findByText("Marina Lopes");
-    const cardOf = (name: string) =>
-      screen.getByText(name).closest("[data-evaluator-card]") as HTMLElement;
-    expect(within(cardOf("Marina Lopes")).getByRole("status")).toBeTruthy();
-    expect(within(cardOf("Paula Souza")).getByRole("status")).toBeTruthy();
-    expect(within(cardOf("Ricardo Nunes")).queryByRole("status")).toBeNull();
+    const linhaDe = (name: string) =>
+      screen.getByText(name).closest("[data-evaluator-row]") as HTMLElement;
+    expect(within(linhaDe("Marina Lopes")).getByRole("status")).toBeTruthy();
+    expect(within(linhaDe("Paula Souza")).getByRole("status")).toBeTruthy();
+    expect(within(linhaDe("Ricardo Nunes")).queryByRole("status")).toBeNull();
   });
 
+  /*
+   * A busca é ESCOPADA à faixa de KPIs desde que a tela virou linhas
+   * (2026-09-10): "Avaliações" passou a ser também o nome de uma COLUNA da
+   * lista, e `getByText` solto encontrava dois. O que este caso afirma é o
+   * KPI — o total do ciclo —, não o rótulo da coluna.
+   */
   it("linha de contexto: média geral, nº de avaliadores e nº de avaliações", async () => {
     renderWithApp(<CalibrationPage />);
     await screen.findByText("Marina Lopes");
-    expect(screen.getByText("Média geral").parentElement?.textContent).toContain("3.12");
-    expect(screen.getByText("Avaliadores").parentElement?.textContent).toContain("3");
-    expect(screen.getByText("Avaliações").parentElement?.textContent).toContain("10");
+    const kpis = within(await screen.findByTestId("calibration-kpis"));
+    expect(kpis.getByText("Média geral").parentElement?.textContent).toContain("3.12");
+    expect(kpis.getByText("Avaliadores").parentElement?.textContent).toContain("3");
+    expect(kpis.getByText("Avaliações").parentElement?.textContent).toContain("10");
   });
 
   it("cada card expõe a distribuição como tabela acessível (segundo canal além do gráfico)", async () => {
     renderWithApp(<CalibrationPage />);
     await screen.findByText("Marina Lopes");
-    const marina = screen.getByText("Marina Lopes").closest("[data-evaluator-card]") as HTMLElement;
+    const marina = screen.getByText("Marina Lopes").closest("[data-evaluator-row]") as HTMLElement;
     const table = within(marina).getByRole("table");
     expect(table.textContent).toContain("L4");
   });
