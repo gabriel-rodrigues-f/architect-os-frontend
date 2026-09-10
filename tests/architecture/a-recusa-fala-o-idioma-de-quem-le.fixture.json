@@ -240,12 +240,6 @@
       "status": 403,
       "mensagens": []
     },
-    "CalibrationAssistanceNotLeadError": {
-      "arquivo": "src/modules/assistants/application/assistants-access-errors.ts",
-      "code": "OUT_OF_REACH",
-      "status": 404,
-      "mensagens": []
-    },
     "CalibrationNotVisibleError": {
       "arquivo": "src/modules/assessment/application/assessment-access-errors.ts",
       "code": "FORBIDDEN",

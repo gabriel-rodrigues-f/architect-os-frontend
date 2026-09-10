@@ -27,12 +27,10 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
-import { Route as CalibrationRoute } from "@/routes/calibration";
 import { Route as CompareRoute } from "@/routes/compare";
 import { Route as GapAnalysisRoute } from "@/routes/gap-analysis";
 import { Route as ProgressionRoute } from "@/routes/progression";
 import type { AppState, SessionUser } from "@/lib/api";
-import { apiPath } from "@/lib/api-path";
 import {
   fixtureAssignedManagerUser,
   fixtureAssignedTechLeadUser,
@@ -42,10 +40,8 @@ import {
   careerLevelsRoute,
   emptyAuthUsersRoute,
   emptyEligibilityRoute,
-  jsonResponse,
   mockAppFetch,
   renderWithApp,
-  type FetchRoute,
 } from "../helpers/render-app";
 
 /**
@@ -71,7 +67,6 @@ import {
 const fetchMock = vi.fn();
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
-const CalibrationPage = CalibrationRoute.options.component as () => ReactNode;
 const ComparePage = CompareRoute.options.component as () => ReactNode;
 const GapAnalysisPage = GapAnalysisRoute.options.component as () => ReactNode;
 const ProgressionPage = ProgressionRoute.options.component as () => ReactNode;
@@ -84,33 +79,11 @@ const semNinguem: AppState = {
   mentoringSessions: [],
 };
 
-const calibracaoVazia: FetchRoute = (href) =>
-  href.includes(apiPath("/calibration")) && !href.includes("assistance")
-    ? jsonResponse({ cycleId: "2026-h2", evaluators: [], overall: { average: null } })
-    : undefined;
-
-/**
- * Fatia CALIBRAÇÃO — a tela PERGUNTA se há provedor de linguagem natural
- * antes de desenhar o seletor de pessoa e o botão. Sem a resposta não há
- * seletor, e o que este arquivo guarda (a FRASE do campo bloqueado) deixaria
- * de ser exercitado.
- */
-const leituraConfigurada: FetchRoute = (href) =>
-  href.endsWith(apiPath("/assistants/availability"))
-    ? jsonResponse({ naturalLanguageReading: true })
-    : undefined;
-
 const comoAtor = (user: SessionUser) =>
   mockAppFetch(fetchMock, {
     user,
     state: semNinguem,
-    routes: [
-      emptyAuthUsersRoute,
-      careerLevelsRoute,
-      emptyEligibilityRoute,
-      calibracaoVazia,
-      leituraConfigurada,
-    ],
+    routes: [emptyAuthUsersRoute, careerLevelsRoute, emptyEligibilityRoute],
   });
 
 /**
@@ -182,17 +155,5 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
     // O painel que abre é o CARTÃO que explica o bloqueio; lista de opções, nunca.
     expect(screen.queryByRole("listbox")).toBeNull();
     expect(screen.queryByRole("option")).toBeNull();
-  });
-
-  it("Calibração (uma pessoa): usa a mesma combobox das outras telas, com a mesma mensagem", async () => {
-    comoAtor(fixtureAssignedManagerUser);
-    renderWithApp(<CalibrationPage />);
-
-    const seletor = await screen.findByRole("button", {
-      name: /Profissional para a leitura de apoio/,
-    });
-    expect(seletor.textContent).toContain(mensagemDoCampo);
-    expect(seletor.nextElementSibling).toBeNull();
-    expect(document.querySelector("select#calibration-assistance-professional")).toBeNull();
   });
 });

@@ -306,12 +306,6 @@ export const developmentPlanAdviceResponseSchema = personAdvice.extend({
   }),
 });
 
-export const workAssistanceResponseSchema = z.object({
-  subject: z.string(),
-  observations: z.array(z.string()),
-  reading: z.string(),
-});
-
 /**
  * A pergunta que a tela faz ANTES de desenhar o botão de leitura de apoio:
  * esta instalação TEM provedor de linguagem natural? Um campo só, e ele fala
