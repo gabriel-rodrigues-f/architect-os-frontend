@@ -58,7 +58,7 @@ const GRUPOS_DENTRO_DE_UMA_TELA = [
 
 /** Os grupos que viraram TELA: o `?` deles agora é o do cabeçalho da página. */
 const GRUPOS_QUE_VIRARAM_TELA = [
-  { tela: "Catálogo", pagina: CatalogPolicyPage },
+  { tela: "Curadoria do Catálogo", pagina: CatalogPolicyPage },
   { tela: "Textos", pagina: TextTemplatesPage },
   { tela: "Vocabulários", pagina: VocabulariesPage },
   { tela: "Réguas e limiares", pagina: ScoringRulersPage },
