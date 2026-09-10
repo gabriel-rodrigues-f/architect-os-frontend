@@ -29,7 +29,6 @@ export * from "./LearningPathCoverageList";
 export * from "./LoginScreen";
 export * from "./PasswordInput";
 export * from "./MultiSelectFilter";
-export * from "./NoticeBell";
 export * from "./NoticeList";
 export * from "./OutOfReachNote";
 export * from "./OutOfReachScreen";

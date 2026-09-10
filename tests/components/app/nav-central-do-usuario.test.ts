@@ -53,9 +53,37 @@ describe("Central do Usuário — o grupo novo do fim da coluna", () => {
    * esconder de alguém a própria conta.
    */
   it("nenhum dos dois itens carrega régua de alcance", () => {
+    const REGUAS_DE_ALCANCE = [
+      "systemOperationOnly",
+      "platformMetricsOnly",
+      "teamRuleReachOnly",
+      "calibrationReachOnly",
+      "teamCompositionReachOnly",
+      "teamAnalysisOnly",
+      "leadershipOnly",
+      "peopleAdministrationOnly",
+      "personWorkOnly",
+      "ownCareerOnly",
+    ];
     for (const item of NAV_GROUPS.at(-1)?.items ?? []) {
-      expect(Object.keys(item).sort(), item.to).toEqual(["icon", "labelKey", "to"]);
+      expect(
+        Object.keys(item).filter((chave) => REGUAS_DE_ALCANCE.includes(chave)),
+        item.to,
+      ).toEqual([]);
     }
+  });
+
+  /**
+   * O CONTADOR DOS AVISOS (dono, 2026-09-10, com captura): *"o próprio Central
+   * do Usuário → Avisos deve contabilizar, com um número bem ao lado"*. O
+   * sino do cabeçalho saiu e a contagem desceu para o item — declarada no
+   * catálogo, como a das transferências no item do Time, e não escrita à mão
+   * pela casca.
+   */
+  it("o item de Avisos declara que conta os não lidos; Minha Conta não conta nada", () => {
+    const [avisos, minhaConta] = NAV_GROUPS.at(-1)?.items ?? [];
+    expect(avisos?.countsUnreadNotices).toBe(true);
+    expect(minhaConta?.countsUnreadNotices).toBeUndefined();
   });
 
   it("o grupo e o item existem nas duas línguas", () => {

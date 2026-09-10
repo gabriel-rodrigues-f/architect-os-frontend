@@ -189,16 +189,21 @@ describe("AppShell — navegação recortada por papel", () => {
    * abaixo) — feedback ao vivo do product owner (Bloco 7) promoveu-a a
    * grupo próprio.
    */
-  it("o grupo 'Gestão' ganhou a Visão do Sistema ao lado do Painel Executivo", () => {
+  /**
+   * A VISÃO DO SISTEMA entrou no grupo (`84c03f4`) e esta expectativa ficou
+   * para trás — o vermelho já estava em main, com o catálogo certo e o teste
+   * velho. Ela é do CATÁLOGO inteiro, sem recorte de papel; quem esconde a
+   * Visão do Sistema de quem não opera o sistema é o `filterNavGroups`, e isso
+   * os testes de alcance abaixo já prendem.
+   *
+   * Por que ela existe (onda 3 do Painel, dono 2026-09-09): o Painel Executivo
+   * passou a ser a leitura de NEGÓCIO para todo mundo que lidera, e a contagem
+   * de operação — pessoas, times, contas, ciclo — saiu dele para tela própria.
+   * Duas telas, duas perguntas; antes eram a mesma rota despachando por papel.
+   */
+  it("Painel Executivo, Visão do Sistema, Talentos do Time e Avaliação de Desempenho formam o grupo 'Gestão'", () => {
     const operationGroup = NAV_GROUPS.find((grupo) => grupo.labelKey === "nav.group.operation");
     expect(operationGroup).toBeTruthy();
-    /**
-     * Onda 3 do Painel (dono, 2026-09-09): o Painel Executivo passou a ser a
-     * leitura de NEGÓCIO para todo mundo que lidera, e a contagem de operação
-     * — pessoas, times, contas, ciclo — saiu dele para a Visão do Sistema, que
-     * é tela própria e só de quem opera o sistema. Duas telas, duas perguntas;
-     * antes eram a mesma rota despachando por papel.
-     */
     expect(operationGroup?.items.map((item) => item.to)).toEqual([
       "/",
       "/system-view",

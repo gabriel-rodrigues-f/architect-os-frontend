@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
-import { NOTICES_QUERY_KEY } from "@/components/app/NoticeBell";
+import { NOTICES_QUERY_KEY } from "@/hooks";
 import { NoticeList } from "@/components/app/NoticeList";
 import {
   DataOriginCallout,

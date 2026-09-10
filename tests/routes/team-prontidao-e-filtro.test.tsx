@@ -28,8 +28,17 @@ const rotaDeTimes: FetchRoute = (href, init) =>
 /**
  * PEDIDO DO DONO (2026-09-09, com referência visual), Talentos do Time:
  * *"Gostei também da coluna 'Prontidão / Distância', que possui uma régua que
- * muda de cor dentro da linha de cada profissional"* — mais os atalhos de
- * filtro em chip com contagem.
+ * muda de cor dentro da linha de cada profissional"*.
+ *
+ * OS CHIPS VIRARAM UM FILTRO (dono, 2026-09-10): *"Remova esse menu novo que
+ * inseriu, uma para cada status. Isso é anti-escalável. Ao invés disso, quero
+ * um filtro de status que, ao clicar, vai me trazer todos os status (Todos,
+ * Prontos, Em atenção, Críticos, Não avaliados)."* Um botão por estado cresce
+ * com o número de estados e disputa a largura da barra; a lista não cresce.
+ *
+ * E ela resolve sozinha uma decisão que estava pendente: "Em atenção" juntava
+ * as faixas recomendada e alta porque não cabia mais chip na linha. Numa lista
+ * os cinco estados que o dono nomeou cabem, e são exatamente estes cinco.
  *
  * As quatro pessoas abaixo cobrem as quatro leituras da régua de GAP_SEVERITY,
  * que é a régua da casa (`scoring-bands.ts`) e não um corte novo: adequada
@@ -116,11 +125,17 @@ const abrirTabela = async () => {
   await userEvent.click(screen.getByRole("button", { name: "Tabela" }));
 };
 
+/** Abre o filtro de Prontidão e escolhe um dos cinco estados. */
+const escolherProntidao = async (rotulo: string) => {
+  await userEvent.click(screen.getByRole("button", { name: "Prontidão" }));
+  await userEvent.click(await screen.findByRole("option", { name: rotulo }));
+};
+
 const linhaDe = (nome: string) => screen.getByRole("row", { name: new RegExp(nome) });
 
 const cartaoDe = (nome: string) => screen.getByText(nome).closest("div.surface-card");
 
-describe("Talentos do Time — Prontidão / Distância e atalhos de filtro", () => {
+describe("Talentos do Time — Prontidão / Distância e o filtro de prontidão", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -166,37 +181,67 @@ describe("Talentos do Time — Prontidão / Distância e atalhos de filtro", () 
     ).toBeGreaterThan(0);
   });
 
-  it("a contagem do chip é o que a lista desenha: Prontos (1) devolve uma linha", async () => {
+  it("os cinco estados moram numa lista só, com a contagem de cada um", async () => {
     renderWithApp(<TeamPage />);
     await screen.findByText("Paula Pronta");
 
-    for (const rotulo of ["Todos (4)", "Prontos (1)", "Em atenção (1)", "Críticos (1)"]) {
-      expect(screen.getByRole("button", { name: rotulo }).textContent).toBe(rotulo);
-    }
-    expect(screen.getByRole("button", { name: "Não avaliados (1)" }).textContent).toBe(
+    await userEvent.click(screen.getByRole("button", { name: "Prontidão" }));
+    expect(screen.getAllByRole("option").map((opcao) => opcao.textContent)).toEqual([
+      "Todos (4)",
+      "Prontos (1)",
+      "Em atenção (1)",
+      "Críticos (1)",
       "Não avaliados (1)",
-    );
+    ]);
+  });
 
-    await userEvent.click(screen.getByRole("button", { name: "Prontos (1)" }));
+  it("não existe mais um botão por estado na barra — era o que não escalava", async () => {
+    renderWithApp(<TeamPage />);
+    await screen.findByText("Paula Pronta");
+
+    for (const rotulo of ["Prontos (1)", "Em atenção (1)", "Críticos (1)", "Não avaliados (1)"]) {
+      expect(screen.queryByRole("button", { name: rotulo }), rotulo).toBeNull();
+    }
+  });
+
+  it("a contagem da opção é o que a lista desenha: Prontos (1) devolve uma linha", async () => {
+    renderWithApp(<TeamPage />);
+    await screen.findByText("Paula Pronta");
+
+    await escolherProntidao("Prontos (1)");
     await abrirTabela();
 
     const tabela = within(screen.getByRole("table"));
     expect(tabela.getByText("Paula Pronta").textContent).toBe("Paula Pronta");
     expect(tabela.queryByText("Caio Critico")).toBeNull();
-    // Cabeçalho + uma pessoa: a contagem do chip é o tamanho da lista.
+    // Cabeçalho + uma pessoa: a contagem da opção é o tamanho da lista.
     expect(tabela.getAllByRole("row")).toHaveLength(2);
   });
 
-  it("o atalho é o filtro que já existe: Todos devolve a lista inteira", async () => {
+  it("o gatilho anuncia o estado escolhido, e Todos devolve a lista inteira", async () => {
     renderWithApp(<TeamPage />);
     await screen.findByText("Paula Pronta");
 
-    await userEvent.click(screen.getByRole("button", { name: "Críticos (1)" }));
+    await escolherProntidao("Críticos (1)");
+    expect(screen.getByRole("button", { name: "Prontidão" }).textContent).toContain("Críticos (1)");
     expect(screen.queryByText("Paula Pronta")).toBeNull();
 
-    await userEvent.click(screen.getByRole("button", { name: "Todos (4)" }));
+    await escolherProntidao("Todos (4)");
     expect(screen.getByText("Paula Pronta").textContent).toBe("Paula Pronta");
     expect(screen.getByText("Sem Avaliacao").textContent).toBe("Sem Avaliacao");
+  });
+
+  it("quem não foi avaliado é um estado como os outros, e a lista o alcança", async () => {
+    renderWithApp(<TeamPage />);
+    await screen.findByText("Sem Avaliacao");
+
+    await escolherProntidao("Não avaliados (1)");
+    await abrirTabela();
+
+    const tabela = within(screen.getByRole("table"));
+    expect(tabela.getByText("Sem Avaliacao").textContent).toBe("Sem Avaliacao");
+    expect(tabela.queryByText("Paula Pronta")).toBeNull();
+    expect(tabela.getAllByRole("row")).toHaveLength(2);
   });
 
   it("a tabela nomeia o Nível atual, e põe o travessão em quem não tem", async () => {

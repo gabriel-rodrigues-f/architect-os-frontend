@@ -1,22 +1,19 @@
 import { useRouterState } from "@tanstack/react-router";
-import { LogOut, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { WelcomeNoticeToast } from "@/components/app/WelcomeNoticeToast";
-import { useSelectionEmptyState } from "@/components/app/EmptySelection";
+import { NavCountBadge } from "@/components/app/NavCountBadge";
 import { NavGroupSection } from "@/components/app/NavGroupSection";
 import { NavLinkItem } from "@/components/app/NavLinkItem";
-import { NoticeBell } from "@/components/app/NoticeBell";
 import { PageFrame } from "@/components/app/PageFrame";
-import { AccountShortcut } from "@/components/app/AccountShortcut";
-import { SingleSelectFilter } from "@/components/app/SingleSelectFilter";
+import { ShellSidebarFooter } from "@/components/app/ShellSidebarFooter";
 import { SynapseBackground } from "@/components/app/SynapseBackground";
 import { semanticTone } from "@/components/app/ui-bits";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { usePendingTeamTransfers, useReducedMotion } from "@/hooks";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { usePendingTeamTransfers, useReducedMotion, useUnreadNoticeCount } from "@/hooks";
 import { useAuth } from "@/lib/auth";
-import { useCycleSelection } from "@/lib/context-scope";
 import { usePlatformMetricsTab, useSynapseSignals } from "@/lib/dependencies";
 import { PageFillingPane, ShellHeader } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
@@ -26,8 +23,6 @@ import {
   isNavItemActive,
   type NavItem,
 } from "@/lib/navigation-catalog";
-import { Registration } from "@/lib/registration";
-import { defaultUiAuthorizationPolicy } from "@/lib/scope";
 import { SidebarPreferences, defaultSidebarPreferences } from "@/lib/sidebar-preferences";
 import { SessionEndReason } from "@/lib/session-end-reason";
 import { useIdleSession } from "@/lib/use-idle-session";
@@ -72,10 +67,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Sem container por perto (uma casca montada sozinha num teste), não há rede — e nada quebra.
   const synapseSignals = useSynapseSignals();
   const platformMetricsTab = usePlatformMetricsTab();
-  const { cycles, activeCycleId, setActiveCycle } = useCycleSelection();
   const { user, logout } = useAuth();
   const { t } = useI18n();
-  const cicloVazio = useSelectionEmptyState(Registration.CYCLE);
 
   // PR 9 ([FA-01]): o encerramento por inatividade leva a razão — o login explica.
   const idlePhase = useIdleSession({
@@ -91,16 +84,33 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const transfers = usePendingTeamTransfers(user);
   const pendingToDecide = user ? transfers.viewModel.countToDecide(user, transfers.requests) : 0;
-  const pendingBadgeOf = (item: NavItem) =>
-    item.countsPendingTeamTransfers && pendingToDecide > 0 ? (
-      <span
-        aria-label={t("team.transfers.nav.badge", { n: pendingToDecide })}
-        title={t("team.transfers.nav.badge", { n: pendingToDecide })}
-        className="ml-auto flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-primary px-1 text-meta font-semibold tabular-nums text-primary-foreground"
-      >
-        {pendingToDecide > 99 ? "99+" : pendingToDecide}
-      </span>
-    ) : null;
+  const unreadNotices = useUnreadNoticeCount(user);
+
+  /**
+   * O QUE O ITEM CONTA, quando conta alguma coisa. São dois números, e cada um
+   * é o mesmo que a tela de destino mostra: as transferências a aprovar (dono,
+   * 2026-09-06) e os avisos não lidos (dono, 2026-09-10, quando o sino saiu do
+   * cabeçalho). Zero não se anuncia — selo com zero é ruído, não informação.
+   */
+  const badgeOf = (item: NavItem): ReactNode => {
+    if (item.countsPendingTeamTransfers && pendingToDecide > 0) {
+      return (
+        <NavCountBadge
+          count={pendingToDecide}
+          label={t("team.transfers.nav.badge", { n: pendingToDecide })}
+        />
+      );
+    }
+    if (item.countsUnreadNotices && unreadNotices > 0) {
+      return (
+        <NavCountBadge
+          count={unreadNotices}
+          label={t("notices.unreadCount", { n: unreadNotices })}
+        />
+      );
+    }
+    return null;
+  };
 
   const preferences = defaultSidebarPreferences;
   const [collapsed, setCollapsed] = useState(false);
@@ -206,7 +216,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       active={isNavItemActive(item, pathname, navItems)}
       collapsed={variant === "sidebar" && collapsed}
       hint={item.hintKey ? t(item.hintKey) : undefined}
-      badge={pendingBadgeOf(item)}
+      badge={badgeOf(item)}
       onNavigate={onNavigateFrom(item, variant)}
     />
   );
@@ -345,47 +355,27 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          <div
-            className={cn(
-              "border-t border-sidebar-border py-4 text-xs text-sidebar-foreground/70",
-              collapsed ? "px-2" : "px-5",
-            )}
-          >
-            {collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={() => void logout()}
-                    aria-label={t("shell.logout")}
-                    className="flex w-full justify-center rounded-md p-1.5 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  >
-                    <LogOut className="size-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  {user?.name} · {t("shell.logout")}
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <>
-                <p className="truncate font-medium text-sidebar-foreground">{user?.name}</p>
-                <p className="truncate">{user?.email}</p>
-                <button
-                  type="button"
-                  onClick={() => void logout()}
-                  className="mt-2 flex items-center gap-1.5 text-sidebar-foreground/70 transition-colors hover:text-sidebar-accent-foreground"
-                >
-                  <LogOut className="size-3.5" />
-                  {t("shell.logout")}
-                </button>
-              </>
-            )}
-          </div>
+          <ShellSidebarFooter user={user} collapsed={collapsed} onLogout={() => void logout()} />
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
+          {/*
+            O CABEÇALHO ENXUGOU (dono, 2026-09-10, com duas capturas). Saíram a
+            trilha da jornada ("Avaliar → Priorizar…"), o sino de avisos e a
+            engrenagem; o seletor de ciclo desceu para o rodapé da coluna. O
+            que sobrou é o que não tem outra casa: o botão que abre a gaveta em
+            tela estreita, onde a coluna não existe, e o aviso de sessão
+            ociosa, que precisa aparecer por cima de qualquer tela.
+
+            Por isso a barra some no `lg` quando não há aviso: uma faixa fixa,
+            com borda, sem nada dentro, comeria altura de leitura em toda tela.
+          */}
+          <header
+            className={cn(
+              "sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur",
+              idlePhase === "warning" ? "" : "lg:hidden",
+            )}
+          >
             {idlePhase === "warning" ? (
               <div
                 role="alert"
@@ -397,57 +387,16 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {t("shell.idleWarning")}
               </div>
             ) : null}
-            <div
-              className={cn(
-                PAGE_CONTAINER,
-                "flex flex-wrap items-center justify-between gap-3 px-5 py-3 lg:px-8",
-              )}
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setMobileNavOpen(true)}
-                  aria-label={t("shell.openMenu")}
-                  title={t("shell.openMenu")}
-                  className="-ml-1.5 shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground lg:hidden"
-                >
-                  <Menu className="size-5" />
-                </button>
-                <p className="hidden truncate text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground md:block">
-                  {t("shell.flow")}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                {user && defaultUiAuthorizationPolicy.operatesTheSystem(user) ? (
-                  <>
-                    <label className="text-xs text-muted-foreground" htmlFor="cycle">
-                      {t("shell.cycle")}
-                    </label>
-                    <SingleSelectFilter
-                      id="cycle"
-                      ariaLabel={t("shell.cycle")}
-                      value={activeCycleId}
-                      onChange={setActiveCycle}
-                      options={cycles.map((cycle) => ({ value: cycle.id, label: cycle.name }))}
-                      // Dono (2026-09-08, reincidente): sem ciclo, o seletor do
-                      // cabeçalho DIZ que não há e leva a quem pode cadastrar.
-                      // A frase, o destino e a pergunta de alcance vêm do
-                      // `Registration` — a tela não repete nenhuma das três.
-                      empty={cicloVazio}
-                      triggerClassName="h-8 w-auto min-w-0 px-2.5 py-1.5 text-sm shadow-none"
-                    />
-                  </>
-                ) : (
-                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                    {t("shell.cycle")}
-                    <span className="text-sm font-medium text-foreground">
-                      {cycles.find((cycle) => cycle.id === activeCycleId)?.name ?? "—"}
-                    </span>
-                  </p>
-                )}
-                <NoticeBell />
-                <AccountShortcut />
-              </div>
+            <div className={cn(PAGE_CONTAINER, "flex items-center gap-3 px-5 py-3 lg:hidden")}>
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen(true)}
+                aria-label={t("shell.openMenu")}
+                title={t("shell.openMenu")}
+                className="-ml-1.5 shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <Menu className="size-5" />
+              </button>
             </div>
           </header>
 
@@ -485,18 +434,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               />
             ))}
           </nav>
-          <div className="border-t border-sidebar-border px-5 py-4 text-xs text-sidebar-foreground/70">
-            <p className="truncate font-medium text-sidebar-foreground">{user?.name}</p>
-            <p className="truncate">{user?.email}</p>
-            <button
-              type="button"
-              onClick={() => void logout()}
-              className="mt-2 flex items-center gap-1.5 transition-colors hover:text-sidebar-accent-foreground"
-            >
-              <LogOut className="size-3.5" />
-              {t("shell.logout")}
-            </button>
-          </div>
+          <ShellSidebarFooter
+            user={user}
+            onLogout={() => void logout()}
+            cycleFieldId="cycle-mobile"
+          />
         </SheetContent>
       </Sheet>
     </TooltipProvider>

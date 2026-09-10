@@ -1,11 +1,10 @@
 import { cleanup, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * `NoticeBell` chama `useRouter()` no render e `<Link>` no rodapé do popover;
- * ambos exigem `RouterProvider` real. Mesmo motivo dos testes de `AppShell`.
+ * A Central de avisos chama `useRouter()` no render e desenha `<Link>`; ambos
+ * exigem `RouterProvider` real. Mesmo motivo dos testes de `AppShell`.
  */
 vi.mock("@tanstack/react-router", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@tanstack/react-router")>();
@@ -24,7 +23,6 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
   };
 });
 
-import { NoticeBell } from "@/components/app/NoticeBell";
 import { apiPath } from "@/lib/api-path";
 import { calibrationApi, noticesApi } from "@/lib/api";
 import { InMemoryCalibrationGateway } from "@/lib/gateways/calibration.gateway";
@@ -153,7 +151,12 @@ describe("/calibration declara a origem da distribuição que está mostrando", 
  * a Central abre vazia — e uma tela vazia não prova nada sobre carimbo de
  * origem. O que este arquivo verifica continua sendo o carimbo, não o recorte.
  */
-describe("o sino de avisos declara a origem dos avisos que está mostrando", () => {
+/**
+ * O SINO SAIU (dono, 2026-09-10) e levou os dois testes que o usavam como
+ * veículo. Nada se perdeu: a Central de avisos já provava o mesmo carimbo,
+ * nos dois sentidos, nos dois testes que ficaram.
+ */
+describe("a Central de avisos declara a origem dos avisos que está mostrando", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
@@ -168,21 +171,6 @@ describe("o sino de avisos declara a origem dos avisos que está mostrando", () 
     cleanup();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
-  });
-
-  it("com o gateway in-memory registrado, o sino declara a origem do dado", async () => {
-    registraGatewayDeDemonstracao();
-    renderWithApp(<NoticeBell />);
-    await userEvent.click(await screen.findByRole("button", { name: /avisos/i }));
-    await screen.findByText(/transferência de Carla Souza/);
-    expect(screen.getByText(DECLARACAO)).toBeTruthy();
-  });
-
-  it("com o container de produção, o sino não declara nada", async () => {
-    renderWithApp(<NoticeBell />);
-    await userEvent.click(await screen.findByRole("button", { name: /avisos/i }));
-    await screen.findByText(FRASE_DO_SERVIDOR);
-    expect(screen.queryByText(DECLARACAO)).toBeNull();
   });
 
   it("a central de avisos inteira declara a origem se um mock voltar a serví-la", async () => {

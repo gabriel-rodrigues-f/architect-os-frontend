@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { NOTICES_QUERY_KEY } from "@/components/app/NoticeBell";
+import { NOTICES_QUERY_KEY } from "@/hooks";
 import { noticesApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { WelcomeGreeting } from "@/lib/greeting/welcome-greeting";

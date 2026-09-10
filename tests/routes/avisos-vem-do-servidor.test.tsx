@@ -4,8 +4,8 @@ import type { ComponentProps, ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 /**
- * `NoticeBell` chama `useRouter()` no render e `<Link>` no rodapé do popover;
- * ambos exigem `RouterProvider` real. Mesmo motivo dos testes de `AppShell`.
+ * A Central de avisos chama `useRouter()` no render e desenha `<Link>`; ambos
+ * exigem `RouterProvider` real. Mesmo motivo dos testes de `AppShell`.
  */
 vi.mock("@tanstack/react-router", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@tanstack/react-router")>();
@@ -24,17 +24,23 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
   };
 });
 
-import { NoticeBell } from "@/components/app/NoticeBell";
 import { apiPath } from "@/lib/api-path";
 import { Route as NoticesRoute } from "@/routes/notices";
 import { fixtureState, fixtureAssignedTechLeadUser } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
- * O sino do lead era falha FECHADA: o mock recortava por ids de fixture que
+ * A caixa do lead era falha FECHADA: o mock recortava por ids de fixture que
  * nunca casavam com a sessão dele, e a caixa vivia vazia. Ligar o servidor
  * real não pode trocar isso por falha ABERTA — o lead vendo aviso de time
  * alheio.
+ *
+ * O VEÍCULO MUDOU em 2026-09-10: era o sino do cabeçalho, que o dono removeu.
+ * É a Central de avisos que passa a responder por tudo o que ele respondia —
+ * ela mostra a mesma caixa, marca o mesmo aviso por id e não soma nada por
+ * conta própria. A contagem de não lidos, que o sino carregava no badge,
+ * agora vive no item de menu e é prendida em
+ * `tests/components/app/avisos-contam-no-menu.test.tsx`.
  *
  * O recorte de quem alcança o quê é do SERVIDOR (`NoticeInboxAuthorization`
  * compõe `visibleProfessionalIds` no backend). O que se prende aqui é o CONSUMO:
@@ -88,9 +94,6 @@ const escritasDeAviso = (): ChamadaDeEscrita[] =>
     }))
     .filter((call) => call.method === "POST" && call.href.includes(apiPath("/notices")));
 
-const abreOSino = async () =>
-  userEvent.click(await screen.findByRole("button", { name: /avisos/i }));
-
 const montaSessaoDoLead = (rota: FetchRoute) => {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
@@ -101,7 +104,7 @@ const montaSessaoDoLead = (rota: FetchRoute) => {
   });
 };
 
-describe("o sino do lead mostra a caixa que o servidor devolveu", () => {
+describe("a Central de avisos do lead mostra a caixa que o servidor devolveu", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
@@ -110,15 +113,13 @@ describe("o sino do lead mostra a caixa que o servidor devolveu", () => {
 
   it("mostra o aviso que o servidor devolveu", async () => {
     montaSessaoDoLead(caixaDoServidor([AVISO_DO_TIME], 1));
-    renderWithApp(<NoticeBell />);
-    await abreOSino();
+    renderWithApp(<NoticesPage />);
     expect(await screen.findByText(FRASE_DO_AVISO)).toBeTruthy();
   });
 
   it("não mostra nada além do que o servidor devolveu", async () => {
     montaSessaoDoLead(caixaDoServidor([AVISO_DO_TIME], 1));
-    renderWithApp(<NoticeBell />);
-    await abreOSino();
+    renderWithApp(<NoticesPage />);
     await screen.findByText(FRASE_DO_AVISO);
     expect(
       screen.getAllByText(/registrada|concluída|espera revisão|parada|rascunho/i),
@@ -127,15 +128,8 @@ describe("o sino do lead mostra a caixa que o servidor devolveu", () => {
 
   it("com a caixa vazia no servidor, diz que não há aviso em vez de inventar", async () => {
     montaSessaoDoLead(caixaDoServidor([], 0));
-    renderWithApp(<NoticeBell />);
-    await abreOSino();
+    renderWithApp(<NoticesPage />);
     expect(await screen.findByText(/nenhum aviso/i)).toBeTruthy();
-  });
-
-  it("a contagem do sino é a do servidor, não uma soma da tela", async () => {
-    montaSessaoDoLead(caixaDoServidor([AVISO_DO_TIME], 7));
-    renderWithApp(<NoticeBell />);
-    expect(await screen.findByRole("button", { name: /7 não lido|7 unread/i })).toBeTruthy();
   });
 });
 
@@ -148,8 +142,7 @@ describe("as escritas de aviso endereçam só a caixa de quem chama", () => {
 
   it("abrir um aviso não lido marca aquele aviso, por id, e mais nenhum", async () => {
     montaSessaoDoLead(caixaDoServidor([AVISO_DO_TIME], 1));
-    renderWithApp(<NoticeBell />);
-    await abreOSino();
+    renderWithApp(<NoticesPage />);
     await userEvent.click(await screen.findByText(FRASE_DO_AVISO));
     const escritas = escritasDeAviso();
     expect(escritas.map((call) => new URL(call.href).pathname)).toEqual([

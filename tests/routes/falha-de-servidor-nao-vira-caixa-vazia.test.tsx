@@ -1,11 +1,10 @@
 import { cleanup, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * `NoticeBell` chama `useRouter()` no render e `<Link>` no rodapé do popover;
- * ambos exigem `RouterProvider` real. Mesmo motivo dos testes de `AppShell`.
+ * A Central de avisos chama `useRouter()` no render e desenha `<Link>`; ambos
+ * exigem `RouterProvider` real. Mesmo motivo dos testes de `AppShell`.
  */
 vi.mock("@tanstack/react-router", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@tanstack/react-router")>();
@@ -24,7 +23,6 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
   };
 });
 
-import { NoticeBell } from "@/components/app/NoticeBell";
 import { apiPath } from "@/lib/api-path";
 import { Route as CalibrationRoute } from "@/routes/calibration";
 import { Route as NoticesRoute } from "@/routes/notices";
@@ -47,33 +45,29 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  * O invariante: falha de leitura mostra FALHA, com o convite de tentar de
  * novo — nunca a caixa vazia, nunca a contagem antiga no badge.
  *
- * DEFEITO ACHADO AQUI, e ele era pior do que "sem rede": o sino ficava no
- * ESQUELETO PARA SEMPRE quando a leitura de avisos falhava antes de alguém
- * abrir o popover. Causa medida, não deduzida: o `useQuery` do React Query
- * só reavisa o componente quando muda uma propriedade que o componente LEU
- * durante o próprio render, e o `NoticeBell` lia apenas o payload
- * (`query.data`). De 'carregando' para 'falhou' o payload não muda — segue
- * `undefined` —, então o sino nunca era reavisado: guardava o resultado
- * 'carregando' e o popover abria num esqueleto eterno, sem o botão de tentar
- * de novo, para sempre (o `refetchInterval` de 60 s também não reavisa).
- * Quem lia `isPending`/`isError` era o `QuerySection`, e ele só monta quando
- * o popover abre — tarde demais.
+ * DEFEITO ACHADO AQUI, e ele era pior do que "sem rede": o sino do cabeçalho
+ * ficava no ESQUELETO PARA SEMPRE quando a leitura de avisos falhava antes de
+ * alguém abrir o popover — ele lia só o payload (`query.data`), e de
+ * 'carregando' para 'falhou' o payload não muda. O conserto foi o
+ * `observedQuery`: quem é dono da consulta materializa o estado INTEIRO da
+ * leitura no próprio render.
  *
- * O conserto é o `observedQuery`: o dono da consulta materializa o estado
- * INTEIRO da leitura no próprio render, não só o que ela devolveu. Provado
- * pelos dois sentidos — os dois primeiros testes falham com o sino voltando
- * a observar só o payload.
+ * O SINO SAIU DO PRODUTO em 2026-09-10 (dono: *"Vamos remover também o ícone
+ * de notificações"*), e com ele os três testes que o usavam como veículo. O
+ * que era DELE e não sobreviveria de outro jeito mudou de casa, não de
+ * existência: a leitura que falha continua provada pela Central de avisos,
+ * logo abaixo, e "sem contagem do servidor ninguém inventa número" passou a
+ * ser prendido no selo do item de menu, em
+ * `tests/components/app/avisos-contam-no-menu.test.tsx`.
  */
 const fetchMock = vi.fn();
 
 const NoticesPage = NoticesRoute.options.component as () => ReactNode;
 const CalibrationPage = CalibrationRoute.options.component as () => ReactNode;
 
-const FALHA_DE_AVISOS = "Não foi possível carregar os avisos.";
 const FALHA_DE_CALIBRACAO = "Não foi possível carregar a calibração.";
 const CAIXA_VAZIA = "Nenhum aviso";
 const CICLO_SEM_NOTA = "Nenhuma avaliação com nota neste ciclo";
-const TENTAR_DE_NOVO = "Tentar novamente";
 const RECARREGAR = "Recarregar";
 const TELA_DE_QUEDA = "service-outage";
 
@@ -88,38 +82,6 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
-});
-
-describe("o sino de avisos declara a falha em vez de dizer que não há aviso", () => {
-  beforeEach(() => {
-    fetchMock.mockReset();
-    vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, {
-      user: fixtureAssignedTechLeadUser,
-      state: fixtureState,
-      routes: [rotaQueFalha("/notices")],
-    });
-  });
-
-  it("com a leitura de avisos falhando, o popover mostra a falha, não a caixa vazia", async () => {
-    renderWithApp(<NoticeBell />);
-    await userEvent.click(await screen.findByRole("button", { name: /avisos/i }));
-    expect(await screen.findByText(FALHA_DE_AVISOS)).toBeTruthy();
-    expect(screen.queryByText(CAIXA_VAZIA)).toBeNull();
-  });
-
-  it("a falha vem com o convite de tentar de novo — o usuário não fica sem saída", async () => {
-    renderWithApp(<NoticeBell />);
-    await userEvent.click(await screen.findByRole("button", { name: /avisos/i }));
-    await screen.findByText(FALHA_DE_AVISOS);
-    expect(screen.getByRole("button", { name: TENTAR_DE_NOVO })).toBeTruthy();
-  });
-
-  it("sem contagem do servidor o badge não inventa número — o rótulo não fala em não lidos", async () => {
-    renderWithApp(<NoticeBell />);
-    const sino = await screen.findByRole("button", { name: /avisos/i });
-    expect(sino.getAttribute("aria-label")).toBe("Avisos");
-  });
 });
 
 /**

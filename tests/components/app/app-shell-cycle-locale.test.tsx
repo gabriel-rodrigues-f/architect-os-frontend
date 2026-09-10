@@ -1,5 +1,5 @@
 import { fixtureAdminUser } from "../../helpers/fixtures";
-import { cleanup, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -36,6 +36,12 @@ import { mockAppFetch, renderWithApp } from "../../helpers/render-app";
  * `<select>` nativo por `SingleSelectFilter`. Estes testes provam que a
  * troca de controle não mudou o comportamento: abrir, escolher uma opção,
  * ver o valor mudar — só o "chrome" visual é diferente agora.
+ *
+ * O CICLO MUDOU DE CANTO (dono, 2026-09-10): ele morava no alto, à direita, e
+ * desceu para o rodapé da coluna, ao lado do bloco do usuário. O que este
+ * arquivo prende é o COMPORTAMENTO do seletor, e ele não mudou de casa junto
+ * com o seletor: abrir, escolher, ver o valor trocar, sair com Escape. Onde
+ * ele fica é prendido em `o-cabecalho-enxuga.test.tsx`.
  */
 const fetchMock = vi.fn();
 
@@ -125,29 +131,18 @@ describe("AppShell — seletor de Ciclo e de idioma (R3-008)", () => {
   /**
    * A TROCA DE IDIOMA MUDOU DE CASA (fatia Minha Conta, 2026-09-10).
    *
-   * Ela vivia aqui, no popover da engrenagem do cabeçalho. Com Minha Conta, o
-   * seletor passou para **Minha Conta → Preferências** e a engrenagem virou o
-   * atalho para lá — então este arquivo, que é sobre o CABEÇALHO, deixou de
-   * ser o dono da prova. Ela não foi apagada: mudou junto, para
-   * `tests/routes/preferencias-da-conta-na-escala.test.tsx`, onde o seletor
-   * agora mora. O que ficou aqui é o que continua sendo do cabeçalho: o
-   * seletor de Ciclo, e o atalho que leva a Minha Conta.
+   * Ela vivia no popover da engrenagem do cabeçalho. Com Minha Conta, o
+   * seletor passou para **Minha Conta → Preferências**, e a prova mudou junto
+   * para `tests/routes/preferencias-da-conta-na-escala.test.tsx`. Horas
+   * depois, no mesmo dia, o dono removeu a própria engrenagem — *"ao invés de
+   * termos um ícone de engrenagem para as configurações (idioma e tema),
+   * vamos transformar isso em um menu e remover o ícone da engrenagem"* —, e
+   * o caminho passou a ser o item da coluna. O que fica aqui é o que este
+   * arquivo sempre guardou: o popover antigo não voltou.
    */
-  it("a engrenagem do cabeçalho anuncia Minha Conta, e o painel de preferências não mora mais aqui", async () => {
+  it("o painel de preferências não mora mais no cabeçalho", async () => {
     renderShell();
-    // O `Link` é substituído por um `<a>` sem `href` neste arquivo (mesmo mock
-    // do topo), então o DESTINO não é conferível aqui — quem o prova é o
-    // typecheck, que valida `to="/account"` contra a árvore de rotas, e o
-    // catálogo do menu. O que se prende aqui é o que é do CABEÇALHO: o atalho
-    // existe, anuncia para onde vai, e o popover antigo não voltou.
-    //
-    // A busca é DENTRO do cabeçalho de propósito: "Minha Conta" também é o
-    // item do menu, na coluna, e uma busca no documento inteiro acharia os
-    // dois e não diria qual deles está sendo prendido aqui.
-    await screen.findByText("Ciclo");
-    const cabecalho = document.querySelector("header");
-    expect(cabecalho).toBeTruthy();
-    expect(within(cabecalho as HTMLElement).getByLabelText("Minha Conta")).toBeTruthy();
+    await screen.findByLabelText("Ciclo");
     expect(screen.queryByRole("button", { name: "Preferências" })).toBeNull();
   });
 });

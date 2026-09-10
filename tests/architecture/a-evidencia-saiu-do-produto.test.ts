@@ -85,8 +85,20 @@ describe("a Evidência saiu do produto (dono, 2026-09-08, regra 17)", () => {
     expect([...VOCABULARY_NAMES]).not.toContain("EVIDENCE_TYPE");
   });
 
-  it("a jornada anunciada no topo perdeu o passo Evidenciar, nos dois idiomas", () => {
-    expect(pt["shell.flow"]).toBe("Avaliar → Priorizar → Desenvolver → Conversar → Evoluir");
-    expect(en["shell.flow"]).toBe("Assess → Prioritize → Develop → Talk → Evolve");
+  /**
+   * A JORNADA SAIU DA TELA (dono, 2026-09-10): *"Remova o Avaliar →
+   * Priorizar… etc, etc do canto superior da tela."* Ela era o texto que este
+   * arquivo vigiava para garantir que o passo EVIDENCIAR não voltasse; sem
+   * texto, o que resta a prender é que ele não volte por uma chave nova — e é
+   * isso que os dois testes de catálogo acima já fazem, para a palavra
+   * inteira. O que fica aqui é a prova de que a frase não vive mais em lugar
+   * nenhum, em nenhum dos dois idiomas.
+   */
+  it("a jornada anunciada no topo não existe mais em catálogo nenhum", () => {
+    const catalogos: Record<string, string>[] = [pt, en];
+    for (const catalogo of catalogos) {
+      expect(catalogo["shell.flow"]).toBeUndefined();
+      expect(Object.values(catalogo).filter((texto) => texto.includes("→ Priorizar"))).toEqual([]);
+    }
   });
 });
