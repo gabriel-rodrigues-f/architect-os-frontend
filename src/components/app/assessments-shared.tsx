@@ -2,12 +2,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 
-import { GapBadge, LevelBadge, SectionCard } from "@/components/app/ui-bits";
-import { Badge } from "@/components/ui/badge";
+import { EmptyState, GapBadge, LevelBadge, SectionCard } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
+import {
+  CapabilityPortfolioFigure,
+  CapabilityPortfolioMeter,
+  PortfolioStage,
+  PortfolioStageChip,
+} from "@/components/app/CapabilityPortfolioMeter";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { QuerySection } from "@/components/app/QuerySection";
-import { Progress } from "@/components/ui/progress";
+import { TruncatedText } from "@/components/app/TruncatedText";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type {
@@ -21,6 +26,7 @@ import type {
 } from "@/lib/domain";
 import { api, ApiError, type CommentInput } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
+import { EmptySubject } from "@/lib/empty-subject";
 import { useAsyncSubmit, useNarrowViewport } from "@/hooks";
 import { useI18n, type I18nApi } from "@/lib/i18n";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
@@ -378,85 +384,86 @@ export function CareerPortfolioSection({
             title={t("asmt.portfolio.title")}
             description={t("asmt.portfolio.subtitle")}
           >
-            <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
-              <Badge variant={portfolioSize >= minimumPortfolio ? "default" : "outline"}>
-                {t("asmt.portfolio.size", { n: portfolioSize, min: minimumPortfolio })}
-              </Badge>
-              <Progress
-                value={Math.min(100, (portfolioSize / minimumPortfolio) * 100)}
-                className="h-1.5 w-24"
-                aria-label={t("asmt.portfolio.size", { n: portfolioSize, min: minimumPortfolio })}
+            {portfolioSize === 0 ? (
+              /*
+               * A FALTA SE DIZ UMA VEZ. Dono (2026-09-09): o bloco vazio
+               * repetia "você não selecionou nada" cinco vezes. Sobra o estado
+               * vazio de duas linhas da casa — a linha 1 vem do assunto, a
+               * linha 2 é a regra DESTE ciclo, e ela muda com quem lê: para
+               * quem propõe é o que fazer; para quem só acompanha é quem faz.
+               */
+              <EmptyState
+                title={EmptySubject.CAPABILITY.titleIn(t, "empty.context.inThePortfolio")}
+                hint={
+                  canPropose
+                    ? t("asmt.portfolio.minimumHint", { min: minimumPortfolio })
+                    : t("asmt.portfolio.empty.readOnly", { min: minimumPortfolio })
+                }
               />
-              {eligibility.nextCareerLevel ? (
-                <>
-                  <span className="text-muted-foreground">
-                    {t("asmt.portfolio.progressTo", { nivel: eligibility.nextCareerLevel.name })}
-                  </span>
-                  <Badge variant={eligibility.eligible ? "default" : "outline"}>
-                    {t("asmt.portfolio.qualifiedCount", {
+            ) : (
+              <>
+                <div className="mb-4 space-y-4">
+                  {eligibility.nextCareerLevel ? (
+                    <CapabilityPortfolioFigure
+                      levelName={eligibility.nextCareerLevel.name}
+                      qualified={eligibility.qualifiedConfirmedCount}
+                      required={minimumPortfolio}
+                      eligible={eligibility.eligible}
+                    />
+                  ) : (
+                    <p className="text-body text-muted-foreground">
+                      {t("asmt.portfolio.topLevel")}
+                    </p>
+                  )}
+                  <CapabilityPortfolioMeter
+                    entries={eligibility.capabilities}
+                    required={minimumPortfolio}
+                    label={t("asmt.portfolio.qualifiedCount", {
                       qualified: eligibility.qualifiedConfirmedCount,
-                      required: eligibility.policy?.minimumQualifiedCapabilities ?? globalFloor,
+                      required: minimumPortfolio,
                     })}
-                  </Badge>
-                </>
-              ) : (
-                <span className="text-muted-foreground">{t("asmt.portfolio.topLevel")}</span>
-              )}
-            </div>
-            {canPropose && portfolioSize < minimumPortfolio && (
-              <p className="mb-3 text-xs text-muted-foreground">
-                {t("asmt.portfolio.minimumHint", { min: minimumPortfolio })}
-              </p>
-            )}
+                  />
+                </div>
 
-            <ul className="space-y-1.5">
-              {eligibility.capabilities.map((entry) => {
-                const capability = store.capabilities.find((c) => c.id === entry.capabilityId);
-                const name = capability?.name ?? entry.capabilityId;
-                return (
-                  <li
-                    key={entry.capabilityId}
-                    className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-sm"
-                  >
-                    <span>{name}</span>
-                    <div className="flex items-center gap-2">
-                      {entry.confirmed ? (
-                        <Badge variant={entry.qualified ? "default" : "outline"}>
-                          {entry.qualified
-                            ? t("asmt.portfolio.qualified")
-                            : t("asmt.portfolio.notQualified")}
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary">{t("asmt.portfolio.pendingConfirmation")}</Badge>
-                      )}
-                      {canConfirm && !entry.confirmed && (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          disabled={busy}
-                          onClick={() => confirmCapability(entry.capabilityId)}
-                        >
-                          {t("asmt.portfolio.confirm")}
-                        </Button>
-                      )}
-                      {canPropose && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={busy}
-                          onClick={() => attemptRemove(entry.capabilityId, name)}
-                        >
-                          {t("common.remove")}
-                        </Button>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-              {eligibility.capabilities.length === 0 && (
-                <p className="text-sm text-muted-foreground">{t("asmt.portfolio.empty")}</p>
-              )}
-            </ul>
+                <ul className="space-y-1.5">
+                  {eligibility.capabilities.map((entry) => {
+                    const capability = store.capabilities.find((c) => c.id === entry.capabilityId);
+                    const name = capability?.name ?? entry.capabilityId;
+                    return (
+                      <li
+                        key={entry.capabilityId}
+                        className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-body"
+                      >
+                        <TruncatedText text={name} />
+                        <div className="flex shrink-0 items-center gap-2">
+                          <PortfolioStageChip stage={PortfolioStage.of(entry)} />
+                          {canConfirm && !entry.confirmed && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled={busy}
+                              onClick={() => confirmCapability(entry.capabilityId)}
+                            >
+                              {t("asmt.portfolio.confirm")}
+                            </Button>
+                          )}
+                          {canPropose && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={busy}
+                              onClick={() => attemptRemove(entry.capabilityId, name)}
+                            >
+                              {t("common.remove")}
+                            </Button>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            )}
 
             {canPropose && (
               <div className="mt-3 flex gap-2">

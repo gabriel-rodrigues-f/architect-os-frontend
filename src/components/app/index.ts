@@ -12,6 +12,7 @@ export * from "./CapabilityCombobox";
 export * from "./CareerEventTimeline";
 export * from "./Chip";
 export * from "./CapabilityHeatmap";
+export * from "./CapabilityPortfolioMeter";
 export * from "./CommandDialog";
 export * from "./CommandWithReasonDialog";
 export * from "./CompetencyGapCard";
