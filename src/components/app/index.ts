@@ -38,6 +38,7 @@ export * from "./CardHelp";
 export * from "./CareerFileHeading";
 export * from "./PageAction";
 export * from "./PageHelp";
+export * from "./ProficiencyScaleLegend";
 export * from "./ProfileHeader";
 export * from "./progression-criteria-shared";
 export * from "./QuerySection";

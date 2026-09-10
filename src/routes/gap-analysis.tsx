@@ -148,9 +148,15 @@ function TeamPriorities() {
               title={t("gap.radar.title")}
               description={t("gap.radar.subtitle", { escopo: scopeLabel })}
             >
+              {/*
+                UMA figura, não três itens. A caixa pedia `items(3)` do ritmo
+                genérico — 276px — para hospedar um radar que declara 320 de
+                altura: sobrava barra de rolagem para 44px que ninguém queria
+                rolar. O ritmo da FIGURA vale o que a figura mede.
+              */}
               <ScrollPane
                 label={t("pane.gapRadar.label")}
-                height={PaneHeight.items(3, PaneRhythm.ITEM)}
+                height={PaneHeight.items(1, PaneRhythm.FIGURE)}
               >
                 <CapabilityRadar data={radar} />
               </ScrollPane>
@@ -171,7 +177,7 @@ function TeamPriorities() {
             >
               <ScrollPane
                 label={t("pane.gapPriorities.label")}
-                height={PaneHeight.items(5, PaneRhythm.ITEM)}
+                height={PaneHeight.items(5, PaneRhythm.PRIORITY)}
                 className="space-y-4 pr-1"
               >
                 <GapPriorityList

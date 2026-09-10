@@ -324,19 +324,31 @@ export function PageHeader({
   description,
   actions,
   help,
+  legend,
 }: {
   title: string;
   description?: string | undefined;
   actions?: ReactNode;
 
   help?: { lead: PageHelpContent; member: PageHelpContent } | undefined;
+  /**
+   * A LEGENDA da tela — uma escala, um conjunto de selos — na linha do título.
+   *
+   * Ela mora aqui, e não num bloco do corpo, por medida: no Catálogo de
+   * Competências a escala L1–L5 ocupava um cartão de 218,9px numa tela onde
+   * nada é medido em nível, e era exatamente o que impedia o documento de
+   * caber em 1440×900. Na linha do título ela custa ZERO — a linha já mede
+   * 32px por causa do `h1`, e um selo mede 22.
+   */
+  legend?: ReactNode;
 }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div className="page-heading">
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <h1 className="page-title">{title}</h1>
           {help && <PageHelp content={help} />}
+          {legend}
         </div>
         {description && (
           <p className="mt-1 line-clamp-3 max-w-prose text-sm text-muted-foreground md:line-clamp-2">

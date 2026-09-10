@@ -23,15 +23,18 @@ describe("o bloco que rola em si mesmo", () => {
 
   it("mede em ITENS e não em pixel: o número mora no token do ritmo", () => {
     render(
-      <ScrollPane label="Bloco" height={PaneHeight.items(3, PaneRhythm.ITEM)}>
+      <ScrollPane label="Bloco" height={PaneHeight.items(3, PaneRhythm.CARD)}>
         conteúdo
       </ScrollPane>,
     );
     expect(caixa().getAttribute("style")).toContain(
-      `${PaneHeight.TOKEN}: calc(3 * var(${PaneRhythm.ITEM.token}))`,
+      `${PaneHeight.TOKEN}: calc(3 * var(${PaneRhythm.CARD.token}))`,
     );
+    // Cada ritmo é um comprimento declarado na folha — nenhum número solto na
+    // tela. Em `rem` quando o ritmo acompanha o texto (a linha de tabela), em
+    // `px` quando é o passo MEDIDO de um item que não escala com a fonte.
     for (const rhythm of PaneRhythm.ALL) {
-      expect(Bloco.de(":root {").valorDe(rhythm.token)).toMatch(/^[\d.]+rem$/);
+      expect(Bloco.de(":root {").valorDe(rhythm.token)).toMatch(/^[\d.]+(?:rem|px)$/);
     }
   });
 

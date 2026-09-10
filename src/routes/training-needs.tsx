@@ -227,7 +227,7 @@ function TeamTrainingNeeds() {
           />
           <ScrollPane
             label={t("pane.needsRecommended.label")}
-            height={PaneHeight.items(4, PaneRhythm.ITEM)}
+            height={PaneHeight.items(4, PaneRhythm.DISTANCE_CARD)}
           >
             <ul className="space-y-3">
               {collective.map((n) => (

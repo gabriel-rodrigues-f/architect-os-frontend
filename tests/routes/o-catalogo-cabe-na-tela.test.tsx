@@ -22,7 +22,9 @@ import { careerLevelsRoute, mockAppFetch, renderWithApp } from "../helpers/rende
  * São DUAS caixas na MESMA tela, e é isso que esta régua guarda:
  *
  * - a de **capacidades** ganha TETO em conteúdo — três cartões, no ritmo do
- *   item (`--pane-item-h`), medida que é do dono e não do navegador;
+ *   CARTÃO (`--pane-card-h`), medida que é do dono e não do navegador. O
+ *   ritmo era genérico e chutado (92px) e a caixa mostrava dois cartões e
+ *   meio; medido, o passo do cartão é 110,89 e o token vale 112;
  * - a de **arquivadas** não tem teto nenhum: é a caixa que ocupa o RESTO
  *   (`PageFillingPane`, `becfd24`), e quem mede é a coluna do quadro.
  *
@@ -123,7 +125,7 @@ describe("Catálogo de Competências: as duas caixas cabem na tela", () => {
     renderPagina();
     const pane = await caixaDeCapacidades();
     expect(pane.getAttribute("style")).toContain(
-      `${PaneHeight.TOKEN}: ${PaneHeight.items(3, PaneRhythm.ITEM).css}`,
+      `${PaneHeight.TOKEN}: ${PaneHeight.items(3, PaneRhythm.CARD).css}`,
     );
     expect(pane.className.split(/\s+/)).toContain(ScrollPaneStyle.capClass);
   });

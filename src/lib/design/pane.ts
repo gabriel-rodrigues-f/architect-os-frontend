@@ -1,8 +1,28 @@
 /**
+ * A altura de uma FIGURA de gráfico. O número existe uma vez: a figura o usa
+ * para desenhar e o token `--pane-figure-h` o repete para a caixa que a
+ * hospeda — e a régua cobra que os dois sejam o mesmo. Enquanto a caixa pedia
+ * "3 itens" do ritmo genérico, ela media 276 para uma figura de 320, e o radar
+ * rolava 44px dentro de si.
+ */
+export const CHART_FIGURE_HEIGHT_PX = 320;
+
+/**
  * O RITMO de um bloco rolável: quanto ALTO é um item dele. Existe para que a
  * altura da caixa seja pedida em ITENS ("três itens", "duas linhas") e não em
  * pixels espalhados pelas telas — o número mora uma vez, no token da folha de
  * estilo, e a tela só diz quantos cabem.
+ *
+ * Havia UM ritmo de item — `--pane-item-h`, 92px — servindo a três listas e a
+ * uma figura, e o número nunca foi medido. Medido no navegador com o CSS
+ * compilado (1440×900), o PASSO de cada uma é outro: 110,89 no cartão de
+ * capacidade do Catálogo, 126 a 166 no item de prioridade, 160 a 176 no
+ * cartão de distância, e o radar não é lista nenhuma — é uma figura de 320.
+ * Com 92, `items(3)` do Catálogo mostrava DOIS CARTÕES E MEIO: o dono pedia
+ * três e via 2,5.
+ *
+ * Então o ritmo é POR TIPO DE ITEM. Um número médio para quatro conteúdos
+ * diferentes seria o mesmo chute com outro valor.
  */
 export class PaneRhythm {
   private constructor(
@@ -13,10 +33,30 @@ export class PaneRhythm {
   /** Linha de tabela da casa: `py-2` sobre o corpo de texto padrão. */
   static readonly ROW = new PaneRhythm("row", "--pane-row-h");
 
-  /** Item de lista em bloco — cartão empilhado, item de prioridade. */
-  static readonly ITEM = new PaneRhythm("item", "--pane-item-h");
+  /** Cartão de capacidade empilhado — o item do Catálogo de Competências. */
+  static readonly CARD = new PaneRhythm("card", "--pane-card-h");
 
-  static readonly ALL: readonly PaneRhythm[] = [PaneRhythm.ROW, PaneRhythm.ITEM];
+  /** Item da lista de prioridades de desenvolvimento — altura variável. */
+  static readonly PRIORITY = new PaneRhythm("priority", "--pane-priority-h");
+
+  /** Cartão de competência com a distância (`CompetencyGapCard`). */
+  static readonly DISTANCE_CARD = new PaneRhythm("distance-card", "--pane-distance-card-h");
+
+  /**
+   * A FIGURA de um gráfico. Não é item de lista: a figura declara a própria
+   * altura, e a caixa que a hospeda pede UMA. Estava vestida de `items(3)` do
+   * ritmo genérico — 276px para uma figura de 320 —, e por isso o radar rolava
+   * 44px dentro da própria caixa sem ter o que rolar.
+   */
+  static readonly FIGURE = new PaneRhythm("figure", "--pane-figure-h");
+
+  static readonly ALL: readonly PaneRhythm[] = [
+    PaneRhythm.ROW,
+    PaneRhythm.CARD,
+    PaneRhythm.PRIORITY,
+    PaneRhythm.DISTANCE_CARD,
+    PaneRhythm.FIGURE,
+  ];
 }
 
 /**
