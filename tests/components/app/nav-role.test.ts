@@ -189,10 +189,22 @@ describe("AppShell — navegação recortada por papel", () => {
    * abaixo) — feedback ao vivo do product owner (Bloco 7) promoveu-a a
    * grupo próprio.
    */
-  it("Painel Executivo, Talentos do Time e Avaliação de Desempenho formam o grupo 'Gestão'", () => {
+  it("o grupo 'Gestão' ganhou a Visão do Sistema ao lado do Painel Executivo", () => {
     const operationGroup = NAV_GROUPS.find((grupo) => grupo.labelKey === "nav.group.operation");
     expect(operationGroup).toBeTruthy();
-    expect(operationGroup?.items.map((item) => item.to)).toEqual(["/", "/team", "/assessments"]);
+    /**
+     * Onda 3 do Painel (dono, 2026-09-09): o Painel Executivo passou a ser a
+     * leitura de NEGÓCIO para todo mundo que lidera, e a contagem de operação
+     * — pessoas, times, contas, ciclo — saiu dele para a Visão do Sistema, que
+     * é tela própria e só de quem opera o sistema. Duas telas, duas perguntas;
+     * antes eram a mesma rota despachando por papel.
+     */
+    expect(operationGroup?.items.map((item) => item.to)).toEqual([
+      "/",
+      "/system-view",
+      "/team",
+      "/assessments",
+    ]);
   });
 
   /**
