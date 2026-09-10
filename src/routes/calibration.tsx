@@ -11,6 +11,7 @@ import {
   PageHeader,
   PersonCombobox,
   QuerySection,
+  ScrollPane,
   SingleSelectFilter,
   StatCard,
   WorkAssistanceSection,
@@ -21,6 +22,7 @@ import { calibrationApi, teamsApi, workAssistantsApi } from "@/lib/api";
 import { Registration } from "@/lib/registration";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
+import { PaneHeight } from "@/lib/design";
 import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -219,17 +221,22 @@ function CalibrationBoard() {
                         )}
                       />
                     </div>
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                      {vm.evaluators(data).map((view) => (
-                        <EvaluatorDistributionCard
-                          key={view.userId}
-                          view={view}
-                          scoreLevels={vm.scoreLevels(view.distribution)}
-                          overallAverageLabel={vm.overallAverageLabel(data)}
-                          thresholdLabel={vm.thresholdLabel()}
-                        />
-                      ))}
-                    </div>
+                    <ScrollPane
+                      label={t("pane.calibrationCharts.label")}
+                      height={PaneHeight.restOfPage()}
+                    >
+                      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {vm.evaluators(data).map((view) => (
+                          <EvaluatorDistributionCard
+                            key={view.userId}
+                            view={view}
+                            scoreLevels={vm.scoreLevels(view.distribution)}
+                            overallAverageLabel={vm.overallAverageLabel(data)}
+                            thresholdLabel={vm.thresholdLabel()}
+                          />
+                        ))}
+                      </div>
+                    </ScrollPane>
                   </>
                 )}
               </>

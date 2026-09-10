@@ -41,6 +41,7 @@ export * from "./ProfileHeader";
 export * from "./QuerySection";
 export * from "./RevealBlock";
 export * from "./RoleSelect";
+export * from "./ScrollPane";
 export * from "./SectionHelp";
 export * from "./SupportAccessDialog";
 export * from "./OneOnOnePreparationNarration";

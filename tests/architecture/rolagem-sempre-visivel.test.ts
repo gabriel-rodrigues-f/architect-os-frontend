@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { Varredura, raizDoFrontend } from "../helpers/catraca";
+import { Catraca, Varredura, raizDoFrontend } from "../helpers/catraca";
 import { Bloco } from "../helpers/folha-de-estilo";
 
 /**
@@ -67,4 +67,33 @@ describe("todo contêiner rolável interno leva a utility", () => {
     });
     expect(soltas).toEqual({});
   });
+});
+
+/**
+ * 2026-09-09 — a régua acima varria `overflow-auto` e `overflow-x-auto` e
+ * DEIXAVA PASSAR o `overflow-y-auto`, que é justamente o eixo da padronização
+ * pedida pelo dono (*"mantermos os títulos das páginas sempre visíveis"*). A
+ * fatia da rolagem cria caixas verticais aos montes; sem esticar a régua, cada
+ * uma delas nasceria sem a barra da casa.
+ *
+ * Prova do vermelho no dia em que a extensão nasceu, com a fixture vazia:
+ * 19 ocorrências em 10 arquivos. Nem todas são desta fatia — diálogos, menus
+ * de filtro e a primitiva de comando já estavam assim. Essas entram na
+ * BASELINE como dívida herdada e a catraca só deixa o número descer.
+ *
+ * Regravar: `ATUALIZAR_BASELINE_ROLAGEM_Y=1 npx vitest run tests/architecture/rolagem-sempre-visivel.test.ts`
+ */
+const catracaVertical = new Catraca({
+  fixture: join(raizDoFrontend, "tests", "architecture", "rolagem-sempre-visivel.fixture.json"),
+  variavelDeRegravacao: "ATUALIZAR_BASELINE_ROLAGEM_Y",
+  conta: (arquivo) => {
+    const classes = arquivo.conteudo.match(/className="[^"]*"/g) ?? [];
+    return classes.filter(
+      (classe) => /\boverflow-y-auto\b/.test(classe) && !classe.includes(UTILITY),
+    ).length;
+  },
+});
+
+describe("a caixa que rola na VERTICAL também leva a utility — e o número só desce", () => {
+  catracaVertical.registrarTestes();
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ShellHeader } from "@/lib/design";
+import { PaneHeight, ShellHeader } from "@/lib/design";
 import { Bloco } from "../helpers/folha-de-estilo";
 import { Varredura } from "../helpers/catraca";
 
@@ -36,5 +36,17 @@ describe("a altura do cabeçalho é um token", () => {
       expect(classe).toContain("--shell-header-h");
       expect(classe).not.toContain("74");
     }
+  });
+
+  /*
+   * 2026-09-09, a padronização das treze telas: a caixa que rola em si mede o
+   * que sobra da janela, e essa medida passa pelo MESMO token. Ela não é
+   * classe — é expressão CSS que entra por `style` —, e por isso a catraca a
+   * cobra aqui, e não na lista acima.
+   */
+  it("a medida do resto da página também lê a variável, não o número", () => {
+    const css = PaneHeight.restOfPage().css;
+    expect(css).toContain(`var(${ShellHeader.TOKEN})`);
+    expect(css).not.toContain("74");
   });
 });

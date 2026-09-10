@@ -11,6 +11,7 @@ import {
   PageAction,
   PageHeader,
   QuerySection,
+  ScrollPane,
   SectionAction,
   SectionCard,
   Seniority,
@@ -18,6 +19,7 @@ import {
   StatusBadge,
 } from "@/components/app";
 import { EmptyFieldInvite } from "@/components/app/EmptySelection";
+import { PaneHeight } from "@/lib/design";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -295,6 +297,13 @@ function TeamsScreen() {
   );
 }
 
+/**
+ * Dono (2026-09-09): *"Times Cadastrados: rolagem, mostrando no máximo 2 times
+ * por padrão"*. A medida é em ITENS — quem faz a conta em pixel é o
+ * `PaneHeight`, a partir do token do ritmo da linha.
+ */
+const TIMES_VISIVEIS = 2;
+
 function TeamTable({
   teams,
   registry,
@@ -323,7 +332,12 @@ function TeamTable({
       {teams.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("teams.list.empty")}</p>
       ) : (
-        <div className="scroll-visible overflow-x-auto">
+        <ScrollPane
+          label={t("pane.teamsRegistry.label")}
+          height={PaneHeight.rowsWithColumnHeader(TIMES_VISIVEIS)}
+          table
+          horizontal
+        >
           <table className="w-full min-w-[640px] text-sm" aria-label={t("teams.list.title")}>
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -390,7 +404,7 @@ function TeamTable({
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollPane>
       )}
     </SectionCard>
   );

@@ -22,10 +22,12 @@ import {
   PageActions,
   PageHeader,
   SectionAction,
+  ScrollPane,
   SectionCard,
   SingleSelectFilter,
   WorkAssistanceSection,
 } from "@/components/app";
+import { PaneHeight } from "@/lib/design";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -397,142 +399,146 @@ function MatrixScreen() {
         }
 
         return (
-          <div className="space-y-4">
-            {visibleCapabilities.map((cat) => {
-              const comps = store.competencies.filter((c) => c.capabilityId === cat.id && c.active);
+          <ScrollPane label={t("pane.competencyCatalog.label")} height={PaneHeight.restOfPage()}>
+            <div className="space-y-4">
+              {visibleCapabilities.map((cat) => {
+                const comps = store.competencies.filter(
+                  (c) => c.capabilityId === cat.id && c.active,
+                );
 
-              const isExpanded = expandedIds.has(cat.id) || term.length > 0;
-              return (
-                <SectionCard
-                  key={cat.id}
-                  title={cat.name}
-                  description={t("matrix.competencyCount", {
-                    n: cat.curation.activeCompetencyCount,
-                    min: viewModel.limits.min,
-                    max: viewModel.limits.max,
-                  })}
-                  actions={
-                    <div className="flex flex-wrap items-center gap-2">
-                      {selecting && (
-                        <Checkbox
-                          aria-label={t("matrix.select.capability", { nome: cat.name })}
-                          checked={selection.capabilityCheckbox(cat.id, store.competencies)}
-                          onCheckedChange={() =>
-                            setSelection((current) =>
-                              current.toggleCapability(cat.id, store.competencies),
-                            )
-                          }
-                        />
-                      )}
-                      <CurationStatusControl
-                        brief={viewModel.curationBriefFor(cat)}
-                        onCreateCompetency={isAdmin ? () => setCreatingIn(cat) : undefined}
-                      />
-                      {isAdmin && (
-                        <div className="flex items-center gap-1">
-                          <SectionAction
-                            label={t("matrix.newCompetency")}
-                            onClick={() => setCreatingIn(cat)}
+                const isExpanded = expandedIds.has(cat.id) || term.length > 0;
+                return (
+                  <SectionCard
+                    key={cat.id}
+                    title={cat.name}
+                    description={t("matrix.competencyCount", {
+                      n: cat.curation.activeCompetencyCount,
+                      min: viewModel.limits.min,
+                      max: viewModel.limits.max,
+                    })}
+                    actions={
+                      <div className="flex flex-wrap items-center gap-2">
+                        {selecting && (
+                          <Checkbox
+                            aria-label={t("matrix.select.capability", { nome: cat.name })}
+                            checked={selection.capabilityCheckbox(cat.id, store.competencies)}
+                            onCheckedChange={() =>
+                              setSelection((current) =>
+                                current.toggleCapability(cat.id, store.competencies),
+                              )
+                            }
                           />
-                          <button
-                            type="button"
-                            onClick={() => startEditingCapability(cat)}
-                            aria-label={`${t("common.edit")} ${cat.name}`}
-                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setConfirmDeleteCapability(cat)}
-                            aria-label={`${t("common.delete")} ${cat.name}`}
-                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => toggleExpanded(cat.id)}
-                        aria-label={
-                          isExpanded
-                            ? t("matrix.collapse.collapse", { nome: cat.name })
-                            : t("matrix.collapse.expand", { nome: cat.name })
-                        }
-                        aria-expanded={isExpanded}
-                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                      >
-                        {isExpanded ? (
-                          <ChevronUp className="h-3.5 w-3.5" />
-                        ) : (
-                          <ChevronDown className="h-3.5 w-3.5" />
                         )}
-                      </button>
-                    </div>
-                  }
-                >
-                  {isExpanded && (
-                    <div className="scroll-visible overflow-x-auto">
-                      <table className="w-full min-w-[640px] text-sm">
-                        <thead>
-                          <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                            {selecting && <th scope="col" className="w-8 py-2" />}
-                            <th scope="col" className="py-2">
-                              {t("col.competency")}
-                            </th>
-                            <th scope="col" />
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {comps.map((c) => (
-                            <tr key={c.id} className="border-b border-border/60 last:border-0">
-                              {selecting && (
-                                <td className="py-2">
-                                  <Checkbox
-                                    aria-label={t("matrix.select.competency", { nome: c.name })}
-                                    checked={selection.has(c.id)}
-                                    onCheckedChange={() =>
-                                      setSelection((current) => current.toggle(c.id))
-                                    }
-                                  />
-                                </td>
-                              )}
-                              <td className="py-2 font-medium">{c.name}</td>
-                              <td className="py-2 text-right">
-                                {isAdmin && (
-                                  <div className="flex items-center justify-end gap-1">
-                                    <button
-                                      type="button"
-                                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                                      onClick={() => setEditing(c)}
-                                      aria-label={t("matrix.edit.action", { nome: c.name })}
-                                    >
-                                      <Pencil className="h-3.5 w-3.5" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                                      onClick={() =>
-                                        setConfirmDelete({ competency: c, capability: cat })
-                                      }
-                                      aria-label={t("matrix.delete.action", { nome: c.name })}
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
-                                  </div>
-                                )}
-                              </td>
+                        <CurationStatusControl
+                          brief={viewModel.curationBriefFor(cat)}
+                          onCreateCompetency={isAdmin ? () => setCreatingIn(cat) : undefined}
+                        />
+                        {isAdmin && (
+                          <div className="flex items-center gap-1">
+                            <SectionAction
+                              label={t("matrix.newCompetency")}
+                              onClick={() => setCreatingIn(cat)}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => startEditingCapability(cat)}
+                              aria-label={`${t("common.edit")} ${cat.name}`}
+                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteCapability(cat)}
+                              aria-label={`${t("common.delete")} ${cat.name}`}
+                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(cat.id)}
+                          aria-label={
+                            isExpanded
+                              ? t("matrix.collapse.collapse", { nome: cat.name })
+                              : t("matrix.collapse.expand", { nome: cat.name })
+                          }
+                          aria-expanded={isExpanded}
+                          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                        >
+                          {isExpanded ? (
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    }
+                  >
+                    {isExpanded && (
+                      <div className="scroll-visible overflow-x-auto">
+                        <table className="w-full min-w-[640px] text-sm">
+                          <thead>
+                            <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                              {selecting && <th scope="col" className="w-8 py-2" />}
+                              <th scope="col" className="py-2">
+                                {t("col.competency")}
+                              </th>
+                              <th scope="col" />
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </SectionCard>
-              );
-            })}
-          </div>
+                          </thead>
+                          <tbody>
+                            {comps.map((c) => (
+                              <tr key={c.id} className="border-b border-border/60 last:border-0">
+                                {selecting && (
+                                  <td className="py-2">
+                                    <Checkbox
+                                      aria-label={t("matrix.select.competency", { nome: c.name })}
+                                      checked={selection.has(c.id)}
+                                      onCheckedChange={() =>
+                                        setSelection((current) => current.toggle(c.id))
+                                      }
+                                    />
+                                  </td>
+                                )}
+                                <td className="py-2 font-medium">{c.name}</td>
+                                <td className="py-2 text-right">
+                                  {isAdmin && (
+                                    <div className="flex items-center justify-end gap-1">
+                                      <button
+                                        type="button"
+                                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                                        onClick={() => setEditing(c)}
+                                        aria-label={t("matrix.edit.action", { nome: c.name })}
+                                      >
+                                        <Pencil className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                                        onClick={() =>
+                                          setConfirmDelete({ competency: c, capability: cat })
+                                        }
+                                        aria-label={t("matrix.delete.action", { nome: c.name })}
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </SectionCard>
+                );
+              })}
+            </div>
+          </ScrollPane>
         );
       })()}
 

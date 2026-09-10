@@ -8,10 +8,12 @@ import {
   EmptyStateCallToAction,
   PageAction,
   PageHeader,
+  ScrollPane,
   SectionAction,
   SectionCard,
 } from "@/components/app";
 import { EmptyFieldInvite } from "@/components/app/EmptySelection";
+import { PaneHeight } from "@/lib/design";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -208,146 +210,157 @@ function LearningScreen() {
         }
 
         return (
-          <div className="space-y-4">
-            {visiblePaths.map((path) => {
-              const total = vm.teamProgressPercent(path);
-              const editable = canEdit(path);
-              const createdAt = defaultDateFormatter.formatDate(path.createdAt, locale);
-              const isExpanded = expandedIds.has(path.id) || term.length > 0;
+          /*
+           * Dono (2026-09-09): a lista de trilhas passa a viver DENTRO de um
+           * grupo, e é o grupo que rola — o título da página fica onde está.
+           */
+          <SectionCard title={t("path.list.title")} description={t("path.list.subtitle")}>
+            <ScrollPane label={t("pane.learningPaths.label")} height={PaneHeight.restOfPage()}>
+              <div className="space-y-4">
+                {visiblePaths.map((path) => {
+                  const total = vm.teamProgressPercent(path);
+                  const editable = canEdit(path);
+                  const createdAt = defaultDateFormatter.formatDate(path.createdAt, locale);
+                  const isExpanded = expandedIds.has(path.id) || term.length > 0;
 
-              return (
-                <SectionCard
-                  key={path.id}
-                  title={path.name}
-                  description={path.description}
-                  actions={
-                    <div className="flex items-center gap-3">
-                      <div className="w-40">
-                        <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-                          <span>{t("path.progress")}</span>
-                          <span className="tabular-nums">{total}%</span>
-                        </div>
-                        <Bar value={total} />
-                      </div>
-                      {editable ? (
-                        <SectionAction
-                          icon={Pencil}
-                          label={t("common.edit")}
-                          onClick={() => setEditingPath(path)}
-                        />
-                      ) : (
-                        <span
-                          className="flex items-center gap-1.5 text-xs text-muted-foreground"
-                          title={t("path.readOnly.hint", { autor: path.createdBy ?? "" })}
-                        >
-                          <Lock className="h-3.5 w-3.5" />
-                          {t("path.readOnly.badge")}
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => toggleExpanded(path.id)}
-                        aria-label={
-                          isExpanded
-                            ? t("path.collapse.collapse", { nome: path.name })
-                            : t("path.collapse.expand", { nome: path.name })
-                        }
-                        aria-expanded={isExpanded}
-                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                      >
-                        {isExpanded ? (
-                          <ChevronUp className="h-3.5 w-3.5" />
-                        ) : (
-                          <ChevronDown className="h-3.5 w-3.5" />
-                        )}
-                      </button>
-                    </div>
-                  }
-                >
-                  <p className="mb-3 text-xs text-muted-foreground">
-                    {path.createdBy
-                      ? t("path.createdBy", { autor: path.createdBy })
-                      : t("path.noAuthor")}
-                    {createdAt ? ` · ${createdAt}` : ""}
-                    {" · "}
-                    {t("path.summary.items", { n: path.items.length })}
-                    {" · "}
-                    {t("path.summary.people", { n: path.assignedTo.length })}
-                    {path.completionDeadlineDays !== null
-                      ? ` · ${t("path.summary.deadline", { n: path.completionDeadlineDays })}`
-                      : ""}
-                  </p>
-
-                  <div className="mb-3 flex flex-wrap gap-1.5 text-xs">
-                    {path.competencyIds.map((cid) => (
-                      <span key={cid} className="rounded-md bg-secondary px-2 py-0.5">
-                        {sel.competencyById(cid)?.name ?? cid}
-                      </span>
-                    ))}
-                    {path.assignedTo.map((aid) => (
-                      <EnrollmentBadge key={aid} path={path} professionalId={aid} at={agora} />
-                    ))}
-                  </div>
-
-                  {isExpanded && (
-                    <ul className="divide-y divide-border">
-                      {path.items.map((item) => (
-                        <li key={item.id} className="py-3">
-                          <div className="flex flex-wrap items-center gap-3">
-                            <span className="w-24 shrink-0 rounded-md bg-secondary px-2 py-0.5 text-center text-xs">
-                              {item.type}
-                            </span>
-                            <div className="min-w-40 flex-1">
-                              <p className="text-sm font-medium">{item.title}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {t("path.item.hoursEstimate", { n: item.hours })}
-                              </p>
+                  return (
+                    <SectionCard
+                      key={path.id}
+                      title={path.name}
+                      description={path.description}
+                      actions={
+                        <div className="flex items-center gap-3">
+                          <div className="w-40">
+                            <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+                              <span>{t("path.progress")}</span>
+                              <span className="tabular-nums">{total}%</span>
                             </div>
+                            <Bar value={total} />
                           </div>
-                          <div className="mt-2 space-y-1.5">
-                            {path.assignedTo.map((professionalId) => {
-                              const person = sel.professionalById(professionalId);
-                              const prog = vm.progressFor(path, professionalId, item.id);
-                              const nome = person?.name ?? t("path.assignee.outOfScope");
-                              return (
-                                <div key={professionalId} className="flex items-center gap-2 pl-2">
-                                  <span className="w-28 shrink-0 truncate text-xs text-muted-foreground">
-                                    {nome}
-                                  </span>
-                                  <ProgressControl
-                                    progress={prog.progress}
-                                    statusLabel={labels.learningStatus[prog.status]}
-                                    editable={canEditProgress(path, professionalId)}
-                                    ariaLabel={t("path.item.progressAriaLabel", {
-                                      nome,
-                                      item: item.title,
-                                    })}
-                                    onCommit={(value) =>
-                                      vm.recordProgress(path.id, professionalId, item.id, value)
-                                    }
-                                  />
-                                </div>
-                              );
-                            })}
-                            {path.assignedTo.length === 0 && (
-                              <p className="pl-2 text-xs text-muted-foreground">
-                                {t("path.item.noAssignee")}
-                              </p>
+                          {editable ? (
+                            <SectionAction
+                              icon={Pencil}
+                              label={t("common.edit")}
+                              onClick={() => setEditingPath(path)}
+                            />
+                          ) : (
+                            <span
+                              className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                              title={t("path.readOnly.hint", { autor: path.createdBy ?? "" })}
+                            >
+                              <Lock className="h-3.5 w-3.5" />
+                              {t("path.readOnly.badge")}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => toggleExpanded(path.id)}
+                            aria-label={
+                              isExpanded
+                                ? t("path.collapse.collapse", { nome: path.name })
+                                : t("path.collapse.expand", { nome: path.name })
+                            }
+                            aria-expanded={isExpanded}
+                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                          >
+                            {isExpanded ? (
+                              <ChevronUp className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronDown className="h-3.5 w-3.5" />
                             )}
-                          </div>
-                        </li>
-                      ))}
-                      {!path.items.length && (
-                        <p className="py-2 text-sm text-muted-foreground">
-                          {t("path.card.noItems")}
-                        </p>
+                          </button>
+                        </div>
+                      }
+                    >
+                      <p className="mb-3 text-xs text-muted-foreground">
+                        {path.createdBy
+                          ? t("path.createdBy", { autor: path.createdBy })
+                          : t("path.noAuthor")}
+                        {createdAt ? ` · ${createdAt}` : ""}
+                        {" · "}
+                        {t("path.summary.items", { n: path.items.length })}
+                        {" · "}
+                        {t("path.summary.people", { n: path.assignedTo.length })}
+                        {path.completionDeadlineDays !== null
+                          ? ` · ${t("path.summary.deadline", { n: path.completionDeadlineDays })}`
+                          : ""}
+                      </p>
+
+                      <div className="mb-3 flex flex-wrap gap-1.5 text-xs">
+                        {path.competencyIds.map((cid) => (
+                          <span key={cid} className="rounded-md bg-secondary px-2 py-0.5">
+                            {sel.competencyById(cid)?.name ?? cid}
+                          </span>
+                        ))}
+                        {path.assignedTo.map((aid) => (
+                          <EnrollmentBadge key={aid} path={path} professionalId={aid} at={agora} />
+                        ))}
+                      </div>
+
+                      {isExpanded && (
+                        <ul className="divide-y divide-border">
+                          {path.items.map((item) => (
+                            <li key={item.id} className="py-3">
+                              <div className="flex flex-wrap items-center gap-3">
+                                <span className="w-24 shrink-0 rounded-md bg-secondary px-2 py-0.5 text-center text-xs">
+                                  {item.type}
+                                </span>
+                                <div className="min-w-40 flex-1">
+                                  <p className="text-sm font-medium">{item.title}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {t("path.item.hoursEstimate", { n: item.hours })}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="mt-2 space-y-1.5">
+                                {path.assignedTo.map((professionalId) => {
+                                  const person = sel.professionalById(professionalId);
+                                  const prog = vm.progressFor(path, professionalId, item.id);
+                                  const nome = person?.name ?? t("path.assignee.outOfScope");
+                                  return (
+                                    <div
+                                      key={professionalId}
+                                      className="flex items-center gap-2 pl-2"
+                                    >
+                                      <span className="w-28 shrink-0 truncate text-xs text-muted-foreground">
+                                        {nome}
+                                      </span>
+                                      <ProgressControl
+                                        progress={prog.progress}
+                                        statusLabel={labels.learningStatus[prog.status]}
+                                        editable={canEditProgress(path, professionalId)}
+                                        ariaLabel={t("path.item.progressAriaLabel", {
+                                          nome,
+                                          item: item.title,
+                                        })}
+                                        onCommit={(value) =>
+                                          vm.recordProgress(path.id, professionalId, item.id, value)
+                                        }
+                                      />
+                                    </div>
+                                  );
+                                })}
+                                {path.assignedTo.length === 0 && (
+                                  <p className="pl-2 text-xs text-muted-foreground">
+                                    {t("path.item.noAssignee")}
+                                  </p>
+                                )}
+                              </div>
+                            </li>
+                          ))}
+                          {!path.items.length && (
+                            <p className="py-2 text-sm text-muted-foreground">
+                              {t("path.card.noItems")}
+                            </p>
+                          )}
+                        </ul>
                       )}
-                    </ul>
-                  )}
-                </SectionCard>
-              );
-            })}
-          </div>
+                    </SectionCard>
+                  );
+                })}
+              </div>
+            </ScrollPane>
+          </SectionCard>
         );
       })()}
 

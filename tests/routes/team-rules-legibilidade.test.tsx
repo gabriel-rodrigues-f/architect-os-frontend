@@ -96,8 +96,18 @@ describe("Régua do Time — os dois campos da régua são rotulados do mesmo je
   });
 });
 
-describe("Régua do Time — cada capacidade escolhida tem delimitação própria (V5)", () => {
-  it("as capacidades da régua saem em fundo próprio, uma delimitada da outra", async () => {
+/**
+ * V5 (2026-09-08) pedia que cada capacidade escolhida saísse em fundo próprio,
+ * uma delimitada da outra. O DONO REVOGOU essa fileira em 2026-09-09: *"apagar
+ * a fileira de chips de capacidade logo abaixo de 'Piso de capacidades
+ * qualificadas'"* — ela não filtrava nada, era a repetição do que o seletor
+ * "Capacidades exigidas" já diz. O que este teste guarda agora é o que a
+ * fileira carregava de único: o selo de curadoria pendente. Ele não some, muda
+ * de lugar — o aviso passa a NOMEAR as capacidades, que era justamente o que
+ * faltava nele.
+ */
+describe("Régua do Time — a fileira de capacidades saiu e o aviso nomeia (2026-09-09)", () => {
+  it("a capacidade escolhida não é repetida em chip abaixo do seletor", async () => {
     renderPage();
     await screen.findByText("Kubernetes");
 
@@ -105,10 +115,7 @@ describe("Régua do Time — cada capacidade escolhida tem delimitação própri
       .getAllByText("Cloud Architecture")
       .flatMap((elemento) => elemento.closest("li") ?? []);
 
-    expect(itens).not.toEqual([]);
-    for (const item of itens) {
-      expect(item.className).toContain("bg-secondary");
-    }
+    expect(itens).toEqual([]);
   });
 });
 

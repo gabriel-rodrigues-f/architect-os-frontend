@@ -32,6 +32,5 @@
   "src/routes/learning-paths.tsx": 10,
   "src/routes/professionals.$professionalId.index.tsx": 4,
   "src/routes/professionals.$professionalId.roadmap.tsx": 1,
-  "src/routes/settings.tsx": 2,
-  "src/routes/team-rules.tsx": 1
+  "src/routes/settings.tsx": 2
 }

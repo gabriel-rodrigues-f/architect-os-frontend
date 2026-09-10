@@ -12,6 +12,7 @@ import {
   OutOfReachScreen,
   PageHeader,
   PersonCombobox,
+  ScrollPane,
   SectionCard,
   TreatGapInPlanAction,
   useGapAnalysisData,
@@ -20,6 +21,7 @@ import type { ConsolidatedGapRow } from "@/lib/selectors";
 import { useCurrentUser } from "@/lib/auth";
 import { PersonPicker } from "@/lib/person-selection";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
+import { PaneHeight, PaneRhythm } from "@/lib/design";
 import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { usePageHelp } from "@/lib/page-help";
@@ -146,7 +148,12 @@ function TeamPriorities() {
               title={t("gap.radar.title")}
               description={t("gap.radar.subtitle", { escopo: scopeLabel })}
             >
-              <CapabilityRadar data={radar} />
+              <ScrollPane
+                label={t("pane.gapRadar.label")}
+                height={PaneHeight.items(3, PaneRhythm.ITEM)}
+              >
+                <CapabilityRadar data={radar} />
+              </ScrollPane>
               {radarCoverage.total > 0 && radarCoverage.covered < radarCoverage.total && (
                 <p className="mt-2 text-xs text-muted-foreground">
                   {t("gap.radar.coverage", {
@@ -162,13 +169,17 @@ function TeamPriorities() {
               title={t("gap.priorities.title")}
               description={t("gap.priorities.subtitle", { n: professionals.length })}
             >
-              <div className="max-h-[460px] space-y-4 overflow-y-auto pr-1">
+              <ScrollPane
+                label={t("pane.gapPriorities.label")}
+                height={PaneHeight.items(5, PaneRhythm.ITEM)}
+                className="space-y-4 pr-1"
+              >
                 <GapPriorityList
                   rows={priorities}
                   emptyLabel={t("gap.priorities.none")}
                   furthestFromTarget={furthestFromTarget}
                 />
-              </div>
+              </ScrollPane>
             </SectionCard>
           </div>
         </>

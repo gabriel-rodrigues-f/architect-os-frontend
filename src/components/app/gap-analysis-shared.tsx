@@ -1,8 +1,10 @@
 import { useMemo } from "react";
 
+import { ScrollPane } from "@/components/app/ScrollPane";
 import { GapBadge } from "@/components/app/ui-bits";
 import { TruncationNotice } from "@/components/app/TruncationNotice";
 import { Badge } from "@/components/ui/badge";
+import { PaneHeight } from "@/lib/design";
 import { Selection } from "@/lib/selection";
 import { topByRelevance } from "@/lib/collections";
 import { useI18n } from "@/lib/i18n";
@@ -117,7 +119,12 @@ export function GapTable({
   const { t } = useI18n();
 
   return (
-    <div className="scroll-visible max-h-[480px] overflow-auto">
+    <ScrollPane
+      label={t("pane.gapTable.label")}
+      height={PaneHeight.rowsWithColumnHeader(10)}
+      table
+      horizontal
+    >
       <table className="w-full min-w-[820px] text-sm">
         <thead>
           <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -167,7 +174,7 @@ export function GapTable({
           )}
         </tbody>
       </table>
-    </div>
+    </ScrollPane>
   );
 }
 

@@ -12,6 +12,7 @@ import {
   PageActions,
   PageHeader,
   PersonCombobox,
+  ScrollPane,
   SectionCard,
 } from "@/components/app";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { DevelopmentCycle } from "@/lib/domain";
+import { PaneHeight } from "@/lib/design";
 import { useSuccessToast } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
@@ -282,7 +284,12 @@ function CycleAdministration() {
             : t("cycle.compare.subtitle")
         }
       >
-        <div className="scroll-visible overflow-x-auto">
+        <ScrollPane
+          label={t("pane.cycleCompare.label")}
+          height={PaneHeight.rowsWithColumnHeader(8)}
+          table
+          horizontal
+        >
           <table className="w-full min-w-[520px] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -309,7 +316,7 @@ function CycleAdministration() {
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollPane>
         {store.competencies.length > compare.length && (
           <p className="mt-2 text-xs text-muted-foreground">
             {t("cycle.compare.seeMore")}{" "}
