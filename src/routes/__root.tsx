@@ -21,6 +21,7 @@ import { defaultPublicReach } from "../lib/public-reach";
 import { ThemeProvider, useTheme } from "../lib/theme";
 import { ThemeChoice } from "../lib/theme-choice";
 import { StoreProvider } from "../lib/store";
+import { StaleBundle } from "../lib/stale-bundle";
 import { AppShell } from "../components/app/AppShell";
 import { AuthGate } from "../components/app/AuthGate";
 import { CareerRunCanvas } from "../components/app/CareerRunCanvas";
@@ -77,6 +78,11 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
   captureClientError(error);
   const router = useRouter();
+
+  // A aba do build anterior pede um pedaço de tela que não existe mais: recarregar traz o build novo.
+  useEffect(() => {
+    if (StaleBundle.isChunkLoadFailure(error)) StaleBundle.forBrowser().reloadOnce();
+  }, [error]);
 
   /*
    * O QUADRO TAMBÉM AQUI (dono, 2026-09-09): "comporte a mensagem de erro em
@@ -207,6 +213,15 @@ function RootComponent() {
 
   useEffect(() => {
     startClientErrorTracking();
+  }, []);
+
+  // O Vite avisa antes de a rota quebrar quando um pedaço de tela do build anterior não baixa.
+  useEffect(() => {
+    const onPreloadError = (event: Event) => {
+      if (StaleBundle.forBrowser().reloadOnce()) event.preventDefault();
+    };
+    window.addEventListener("vite:preloadError", onPreloadError);
+    return () => window.removeEventListener("vite:preloadError", onPreloadError);
   }, []);
 
   return (
