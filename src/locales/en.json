@@ -1023,7 +1023,7 @@
   "config.templates.error.unknownVariable": "Variable not available for this key: {variavel}.",
   "config.templates.saveFailed": "Could not save the template.",
   "config.templates.sample.competencia": "Integration Architecture",
-  "config.curation.title": "Catalog",
+  "config.curation.title": "Catalog Curation",
   "config.curation.subtitle": "Catalog curation policy — the maximum of active competencies a capability may have. The maximum is a ceiling, not a target. Changes take effect immediately, no deploy.",
   "config.curation.policyTitle": "Composition per capability",
   "config.curation.field.maxActiveCompetencies": "Maximum active competencies",

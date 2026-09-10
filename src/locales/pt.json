@@ -1023,7 +1023,7 @@
   "config.templates.error.unknownVariable": "Variável não disponível para esta chave: {variavel}.",
   "config.templates.saveFailed": "Não foi possível salvar o template.",
   "config.templates.sample.competencia": "Arquitetura de Integração",
-  "config.curation.title": "Catálogo",
+  "config.curation.title": "Curadoria do Catálogo",
   "config.curation.subtitle": "Política de curadoria do catálogo — o máximo de competências ativas que uma capacidade pode ter. O máximo é teto, não meta. Alterações valem imediatamente, sem deploy.",
   "config.curation.policyTitle": "Composição por capacidade",
   "config.curation.field.maxActiveCompetencies": "Máximo de competências ativas",
