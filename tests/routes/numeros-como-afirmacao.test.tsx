@@ -21,7 +21,6 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as CapabilityRoute } from "@/routes/capability-map";
 import { Route as GapRoute } from "@/routes/gap-analysis";
-import { Route as TrainingNeedsRoute } from "@/routes/training-needs";
 import {
   fixtureAssignedManagerUser,
   fixtureState,
@@ -39,7 +38,6 @@ import { mockAppFetch, renderWithApp } from "../helpers/render-app";
  */
 const fetchMock = vi.fn();
 
-const TrainingNeedsPage = TrainingNeedsRoute.options.component as () => ReactNode;
 const CapabilityPage = CapabilityRoute.options.component as () => ReactNode;
 const GapPage = GapRoute.options.component as () => ReactNode;
 
@@ -62,12 +60,6 @@ describe("números como afirmação nas telas de análise", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-  });
-
-  it("Plano de Capacitação afirma quantas pessoas capacitar", async () => {
-    renderWithApp(<TrainingNeedsPage />);
-    const figura = await figuraDe("Profissionais a capacitar");
-    expect(figura.querySelector(".key-figure-value")?.textContent).toMatch(/^\d+$/);
   });
 
   it("Risco de Concentração afirma quantas capacidades dependem de uma pessoa só", async () => {

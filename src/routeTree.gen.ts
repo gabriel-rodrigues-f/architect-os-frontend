@@ -12,10 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AssessmentsRouteImport } from './routes/assessments'
-import { Route as CalibrationRouteImport } from './routes/calibration'
 import { Route as CapabilityMapRouteImport } from './routes/capability-map'
 import { Route as CatalogPolicyRouteImport } from './routes/catalog-policy'
-import { Route as CompareRouteImport } from './routes/compare'
 import { Route as CompetencyMatrixRouteImport } from './routes/competency-matrix'
 import { Route as CyclesRouteImport } from './routes/cycles'
 import { Route as DevelopmentPlansRouteImport } from './routes/development-plans'
@@ -35,7 +33,6 @@ import { Route as TeamRouteImport } from './routes/team'
 import { Route as TeamRulesRouteImport } from './routes/team-rules'
 import { Route as TeamsRouteImport } from './routes/teams'
 import { Route as TextTemplatesRouteImport } from './routes/text-templates'
-import { Route as TrainingNeedsRouteImport } from './routes/training-needs'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as VocabulariesRouteImport } from './routes/vocabularies'
 import { Route as ProfessionalsProfessionalIdRouteImport } from './routes/professionals.$professionalId'
@@ -59,11 +56,6 @@ const AssessmentsRoute = AssessmentsRouteImport.update({
   path: '/assessments',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CalibrationRoute = CalibrationRouteImport.update({
-  id: '/calibration',
-  path: '/calibration',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CapabilityMapRoute = CapabilityMapRouteImport.update({
   id: '/capability-map',
   path: '/capability-map',
@@ -72,11 +64,6 @@ const CapabilityMapRoute = CapabilityMapRouteImport.update({
 const CatalogPolicyRoute = CatalogPolicyRouteImport.update({
   id: '/catalog-policy',
   path: '/catalog-policy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CompareRoute = CompareRouteImport.update({
-  id: '/compare',
-  path: '/compare',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompetencyMatrixRoute = CompetencyMatrixRouteImport.update({
@@ -174,11 +161,6 @@ const TextTemplatesRoute = TextTemplatesRouteImport.update({
   path: '/text-templates',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TrainingNeedsRoute = TrainingNeedsRouteImport.update({
-  id: '/training-needs',
-  path: '/training-needs',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -224,10 +206,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/assessments': typeof AssessmentsRoute
-  '/calibration': typeof CalibrationRoute
   '/capability-map': typeof CapabilityMapRoute
   '/catalog-policy': typeof CatalogPolicyRoute
-  '/compare': typeof CompareRoute
   '/competency-matrix': typeof CompetencyMatrixRoute
   '/cycles': typeof CyclesRoute
   '/development-plans': typeof DevelopmentPlansRoute
@@ -247,7 +227,6 @@ export interface FileRoutesByFullPath {
   '/team-rules': typeof TeamRulesRoute
   '/teams': typeof TeamsRoute
   '/text-templates': typeof TextTemplatesRoute
-  '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
   '/vocabularies': typeof VocabulariesRoute
   '/professionals/$professionalId': typeof ProfessionalsProfessionalIdRouteWithChildren
@@ -260,10 +239,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/assessments': typeof AssessmentsRoute
-  '/calibration': typeof CalibrationRoute
   '/capability-map': typeof CapabilityMapRoute
   '/catalog-policy': typeof CatalogPolicyRoute
-  '/compare': typeof CompareRoute
   '/competency-matrix': typeof CompetencyMatrixRoute
   '/cycles': typeof CyclesRoute
   '/development-plans': typeof DevelopmentPlansRoute
@@ -283,7 +260,6 @@ export interface FileRoutesByTo {
   '/team-rules': typeof TeamRulesRoute
   '/teams': typeof TeamsRoute
   '/text-templates': typeof TextTemplatesRoute
-  '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
   '/vocabularies': typeof VocabulariesRoute
   '/professionals/$professionalId/evolution': typeof ProfessionalsProfessionalIdEvolutionRoute
@@ -296,10 +272,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/assessments': typeof AssessmentsRoute
-  '/calibration': typeof CalibrationRoute
   '/capability-map': typeof CapabilityMapRoute
   '/catalog-policy': typeof CatalogPolicyRoute
-  '/compare': typeof CompareRoute
   '/competency-matrix': typeof CompetencyMatrixRoute
   '/cycles': typeof CyclesRoute
   '/development-plans': typeof DevelopmentPlansRoute
@@ -319,7 +293,6 @@ export interface FileRoutesById {
   '/team-rules': typeof TeamRulesRoute
   '/teams': typeof TeamsRoute
   '/text-templates': typeof TextTemplatesRoute
-  '/training-needs': typeof TrainingNeedsRoute
   '/users': typeof UsersRoute
   '/vocabularies': typeof VocabulariesRoute
   '/professionals/$professionalId': typeof ProfessionalsProfessionalIdRouteWithChildren
@@ -334,10 +307,8 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/assessments'
-    | '/calibration'
     | '/capability-map'
     | '/catalog-policy'
-    | '/compare'
     | '/competency-matrix'
     | '/cycles'
     | '/development-plans'
@@ -357,7 +328,6 @@ export interface FileRouteTypes {
     | '/team-rules'
     | '/teams'
     | '/text-templates'
-    | '/training-needs'
     | '/users'
     | '/vocabularies'
     | '/professionals/$professionalId'
@@ -370,10 +340,8 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/assessments'
-    | '/calibration'
     | '/capability-map'
     | '/catalog-policy'
-    | '/compare'
     | '/competency-matrix'
     | '/cycles'
     | '/development-plans'
@@ -393,7 +361,6 @@ export interface FileRouteTypes {
     | '/team-rules'
     | '/teams'
     | '/text-templates'
-    | '/training-needs'
     | '/users'
     | '/vocabularies'
     | '/professionals/$professionalId/evolution'
@@ -405,10 +372,8 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/assessments'
-    | '/calibration'
     | '/capability-map'
     | '/catalog-policy'
-    | '/compare'
     | '/competency-matrix'
     | '/cycles'
     | '/development-plans'
@@ -428,7 +393,6 @@ export interface FileRouteTypes {
     | '/team-rules'
     | '/teams'
     | '/text-templates'
-    | '/training-needs'
     | '/users'
     | '/vocabularies'
     | '/professionals/$professionalId'
@@ -442,10 +406,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
   AssessmentsRoute: typeof AssessmentsRoute
-  CalibrationRoute: typeof CalibrationRoute
   CapabilityMapRoute: typeof CapabilityMapRoute
   CatalogPolicyRoute: typeof CatalogPolicyRoute
-  CompareRoute: typeof CompareRoute
   CompetencyMatrixRoute: typeof CompetencyMatrixRoute
   CyclesRoute: typeof CyclesRoute
   DevelopmentPlansRoute: typeof DevelopmentPlansRoute
@@ -465,7 +427,6 @@ export interface RootRouteChildren {
   TeamRulesRoute: typeof TeamRulesRoute
   TeamsRoute: typeof TeamsRoute
   TextTemplatesRoute: typeof TextTemplatesRoute
-  TrainingNeedsRoute: typeof TrainingNeedsRoute
   UsersRoute: typeof UsersRoute
   VocabulariesRoute: typeof VocabulariesRoute
   ProfessionalsProfessionalIdRoute: typeof ProfessionalsProfessionalIdRouteWithChildren
@@ -494,13 +455,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssessmentsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/calibration': {
-      id: '/calibration'
-      path: '/calibration'
-      fullPath: '/calibration'
-      preLoaderRoute: typeof CalibrationRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/capability-map': {
       id: '/capability-map'
       path: '/capability-map'
@@ -513,13 +467,6 @@ declare module '@tanstack/react-router' {
       path: '/catalog-policy'
       fullPath: '/catalog-policy'
       preLoaderRoute: typeof CatalogPolicyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/compare': {
-      id: '/compare'
-      path: '/compare'
-      fullPath: '/compare'
-      preLoaderRoute: typeof CompareRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/competency-matrix': {
@@ -655,13 +602,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TextTemplatesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/training-needs': {
-      id: '/training-needs'
-      path: '/training-needs'
-      fullPath: '/training-needs'
-      preLoaderRoute: typeof TrainingNeedsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/users': {
       id: '/users'
       path: '/users'
@@ -742,10 +682,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
   AssessmentsRoute: AssessmentsRoute,
-  CalibrationRoute: CalibrationRoute,
   CapabilityMapRoute: CapabilityMapRoute,
   CatalogPolicyRoute: CatalogPolicyRoute,
-  CompareRoute: CompareRoute,
   CompetencyMatrixRoute: CompetencyMatrixRoute,
   CyclesRoute: CyclesRoute,
   DevelopmentPlansRoute: DevelopmentPlansRoute,
@@ -765,7 +703,6 @@ const rootRouteChildren: RootRouteChildren = {
   TeamRulesRoute: TeamRulesRoute,
   TeamsRoute: TeamsRoute,
   TextTemplatesRoute: TextTemplatesRoute,
-  TrainingNeedsRoute: TrainingNeedsRoute,
   UsersRoute: UsersRoute,
   VocabulariesRoute: VocabulariesRoute,
   ProfessionalsProfessionalIdRoute:

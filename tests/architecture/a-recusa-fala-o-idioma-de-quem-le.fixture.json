@@ -240,14 +240,6 @@
       "status": 403,
       "mensagens": []
     },
-    "CalibrationNotVisibleError": {
-      "arquivo": "src/modules/assessment/application/assessment-access-errors.ts",
-      "code": "CALIBRATION_RESERVED_TO_MANAGER",
-      "status": 403,
-      "mensagens": [
-        "\"Só o Gerente do time ou quem administra o sistema vê a calibração do ciclo.\""
-      ]
-    },
     "CapabilityCompetenciesInUseError": {
       "arquivo": "src/modules/catalog/domain/errors/catalog-errors.ts",
       "code": "CAPABILITY_COMPETENCIES_IN_USE",
@@ -1306,14 +1298,6 @@
       "status": 400,
       "mensagens": [
         "\"O time de destino precisa ser diferente do time atual da pessoa.\""
-      ]
-    },
-    "TeamTransitionsNotVisibleError": {
-      "arquivo": "src/modules/analytics/application/analytics-access-errors.ts",
-      "code": "FORBIDDEN",
-      "status": 403,
-      "mensagens": [
-        "\"Você não tem acesso às transições de nível deste time.\""
       ]
     },
     "TechLeadAlreadyLeadsATeamError": {

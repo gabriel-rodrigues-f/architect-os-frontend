@@ -146,7 +146,7 @@
   },
   "src/lib/selectors.ts": {
     "id-length": {
-      "count": 18
+      "count": 15
     }
   },
   "src/lib/store.tsx": {
@@ -204,11 +204,6 @@
       "count": 2
     }
   },
-  "src/routes/compare.tsx": {
-    "id-length": {
-      "count": 5
-    }
-  },
   "src/routes/competency-matrix.tsx": {
     "id-length": {
       "count": 18
@@ -252,11 +247,6 @@
   "src/routes/team.tsx": {
     "id-length": {
       "count": 1
-    }
-  },
-  "src/routes/training-needs.tsx": {
-    "id-length": {
-      "count": 6
     }
   },
   "src/routes/users.tsx": {
@@ -406,7 +396,7 @@
   },
   "tests/lib/selectors.test.ts": {
     "id-length": {
-      "count": 24
+      "count": 18
     }
   },
   "tests/lib/store-version-reconcile.test.tsx": {
@@ -417,11 +407,6 @@
   "tests/lib/text.test.ts": {
     "id-length": {
       "count": 2
-    }
-  },
-  "tests/lib/training-needs-orphan-competency.test.ts": {
-    "id-length": {
-      "count": 1
     }
   },
   "tests/lib/view-models/assessment-view-model.test.ts": {
@@ -537,11 +522,6 @@
   "tests/routes/team-roles-from-career-levels.test.tsx": {
     "id-length": {
       "count": 1
-    }
-  },
-  "tests/routes/training-needs-scale.test.tsx": {
-    "id-length": {
-      "count": 2
     }
   }
 }

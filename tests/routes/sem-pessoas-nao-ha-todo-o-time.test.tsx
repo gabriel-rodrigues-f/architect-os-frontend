@@ -27,15 +27,10 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
-import { Route as CompareRoute } from "@/routes/compare";
 import { Route as GapAnalysisRoute } from "@/routes/gap-analysis";
 import { Route as ProgressionRoute } from "@/routes/progression";
 import type { AppState, SessionUser } from "@/lib/api";
-import {
-  fixtureAssignedManagerUser,
-  fixtureAssignedTechLeadUser,
-  fixtureState,
-} from "../helpers/fixtures";
+import { fixtureAssignedManagerUser, fixtureState } from "../helpers/fixtures";
 import {
   careerLevelsRoute,
   emptyAuthUsersRoute,
@@ -67,7 +62,6 @@ import {
 const fetchMock = vi.fn();
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
-const ComparePage = CompareRoute.options.component as () => ReactNode;
 const GapAnalysisPage = GapAnalysisRoute.options.component as () => ReactNode;
 const ProgressionPage = ProgressionRoute.options.component as () => ReactNode;
 
@@ -126,19 +120,6 @@ describe("sem pessoas cadastradas não há 'Todo o time' (dono, 2026-09-06)", ()
 
     expect((await screen.findAllByText(mensagemDoCorpo)).length).toBeGreaterThan(0);
     expect(screen.queryByRole("combobox", { name: "Profissionais" })).toBeNull();
-    expect(screen.queryByText(/Todo o time/)).toBeNull();
-  });
-
-  it("Comparativo (várias com teto): a mensagem, e nada de 'Todo o time'", async () => {
-    comoAtor(fixtureAssignedTechLeadUser);
-    renderWithApp(<ComparePage />);
-
-    const seletor = await screen.findByRole("button", { name: "Profissionais para comparar" });
-    expect(seletor.textContent).toContain(mensagemDoCampo);
-    expect(seletor.getAttribute("aria-disabled")).toBe("true");
-
-    await userEvent.click(seletor);
-    expect(screen.queryByRole("listbox")).toBeNull();
     expect(screen.queryByText(/Todo o time/)).toBeNull();
   });
 

@@ -42,8 +42,12 @@
   "src/routes/assessments.tsx": 13,
   "src/routes/capability-map.tsx": 6,
   "src/routes/catalog-policy.tsx": 7,
+<<<<<<< HEAD
   "src/routes/compare.tsx": 3,
   "src/routes/competency-matrix.tsx": 25,
+=======
+  "src/routes/competency-matrix.tsx": 26,
+>>>>>>> fatia/telas
   "src/routes/cycles.tsx": 12,
   "src/routes/development-plans.tsx": 51,
   "src/routes/eligibility.tsx": 8,
@@ -59,7 +63,6 @@
   "src/routes/team-rules.tsx": 8,
   "src/routes/teams.tsx": 30,
   "src/routes/text-templates.tsx": 12,
-  "src/routes/training-needs.tsx": 3,
   "src/routes/users.tsx": 13,
   "src/routes/vocabularies.tsx": 12
 }

@@ -27,9 +27,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
-import { Route as CalibrationRoute } from "@/routes/calibration";
 import { Route as CapabilityMapRoute } from "@/routes/capability-map";
-import { Route as CompareRoute } from "@/routes/compare";
 import { Route as CompetencyMatrixRoute } from "@/routes/competency-matrix";
 import { Route as CyclesRoute } from "@/routes/cycles";
 import { Route as DevelopmentPlansRoute } from "@/routes/development-plans";
@@ -70,9 +68,7 @@ import {
 const fetchMock = vi.fn();
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
-const CalibrationPage = CalibrationRoute.options.component as () => ReactNode;
 const CapabilityMapPage = CapabilityMapRoute.options.component as () => ReactNode;
-const ComparePage = CompareRoute.options.component as () => ReactNode;
 const CompetencyMatrixPage = CompetencyMatrixRoute.options.component as () => ReactNode;
 const CyclesPage = CyclesRoute.options.component as () => ReactNode;
 const DevelopmentPlansPage = DevelopmentPlansRoute.options.component as () => ReactNode;
@@ -167,17 +163,6 @@ describe("com o banco vazio, o cadastro aparece no centro do quadro principal", 
     expect(filtro.getAttribute("aria-disabled")).toBe("true");
   });
 
-  it("Perfis lado a lado: Cadastrar Profissional", async () => {
-    comoAdmin();
-    renderWithApp(<ComparePage />);
-
-    expect((await screen.findAllByText("Nenhum profissional cadastrado")).length).toBeGreaterThan(
-      0,
-    );
-    expect(botaoDeCadastro("Cadastrar Profissional")).toBeTruthy();
-    expect(screen.queryByText("Selecione ao menos 2 profissionais para comparar.")).toBeNull();
-  });
-
   it("PDI: o cadastro sai do filtro e vai para o centro", async () => {
     comoAdmin();
     renderWithApp(<DevelopmentPlansPage />);
@@ -196,15 +181,6 @@ describe("com o banco vazio, o cadastro aparece no centro do quadro principal", 
       0,
     );
     expect(botaoDeCadastro("Cadastrar Profissional")).toBeTruthy();
-  });
-
-  it("Calibração: Cadastrar Ciclo, e nenhum dos dois filtros oferece porta", async () => {
-    comoAdmin();
-    renderWithApp(<CalibrationPage />);
-
-    expect(await screen.findByText("Nenhum ciclo cadastrado")).toBeTruthy();
-    expect(botaoDeCadastro("Cadastrar Ciclo").getAttribute("href")).toBe("/cycles?cadastrar=ciclo");
-    expect(screen.queryByRole("button", { name: "Ciclo" })).toBeNull();
   });
 
   /**

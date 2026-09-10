@@ -89,7 +89,6 @@ type Alcance =
   | "autenticado"
   | "opera-o-sistema"
   | "lead-com-vinculo"
-  | "calibracao"
   | "lideranca"
   | "analise-de-time"
   | "ficha-de-carreira"
@@ -102,7 +101,6 @@ const ALCANCES: readonly Alcance[] = [
   "autenticado",
   "opera-o-sistema",
   "lead-com-vinculo",
-  "calibracao",
   "lideranca",
   "analise-de-time",
   "ficha-de-carreira",
@@ -114,7 +112,6 @@ const ALCANCES: readonly Alcance[] = [
 const GUARDA_POR_ALCANCE: Readonly<Record<string, string>> = {
   "opera-o-sistema": "requireSystemOperatorReach",
   "lead-com-vinculo": "requireLeadReach",
-  calibracao: "requireCalibrationReach",
   lideranca: "requireLeadershipReach",
   "analise-de-time": "requireTeamAnalysisReach",
   "ficha-de-carreira": "requireCareerTabsReach",
@@ -152,14 +149,19 @@ const NOME_DE_GUARDA = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
  * alcance a enxergava. Agora ela declara o dono como qualquer outra tela, e o
  * Painel de negócio de `/` passa a servir também o administrador.
  */
+/**
+ * AS CINCO REMOÇÕES DO DONO (2026-09-10): 33 → 30 rotas declaradas. O alcance
+ * `calibracao` some INTEIRO do vocabulário — ele existia para uma tela só, a
+ * Calibração de Líderes, e sem ela não há o que ele recorte. `analise-de-time`
+ * cai de 5 para 3, com o Plano de Capacitação e os Perfis lado a lado.
+ */
 const DISTRIBUICAO_ESPERADA = {
   publica: 1,
   autenticado: 8,
   "opera-o-sistema": 6,
   "lead-com-vinculo": 2,
-  calibracao: 1,
   lideranca: 3,
-  "analise-de-time": 5,
+  "analise-de-time": 3,
   "ficha-de-carreira": 4,
   "gestao-de-pessoas": 2,
   "metricas-da-plataforma": 1,

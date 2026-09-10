@@ -82,7 +82,6 @@ describe("SectionHeading", () => {
     const fontes = [
       "src/components/app/ui-bits.tsx",
       "src/components/app/AdherenceSummary.tsx",
-      "src/components/app/EvaluatorCalibrationRow.tsx",
       "src/routes/capability-map.tsx",
       "src/components/app/PageHelp.tsx",
     ];

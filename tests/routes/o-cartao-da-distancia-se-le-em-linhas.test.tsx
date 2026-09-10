@@ -15,11 +15,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as PlansRoute } from "@/routes/development-plans";
-import { Route as NeedsRoute } from "@/routes/training-needs";
-import type { AppState } from "@/lib/api";
-import { apiPath } from "@/lib/api-path";
-import { fixtureState } from "../helpers/fixtures";
-import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
+import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * Dono, 2026-09-09, com duas capturas: *"bug visual em PDI. O texto da
@@ -55,7 +51,6 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
 const fetchMock = vi.fn();
 
 const PlansPage = PlansRoute.options.component as () => ReactNode;
-const NeedsPage = NeedsRoute.options.component as () => ReactNode;
 
 function classesOf(element: Element | null | undefined): string {
   return element?.className ?? "";
@@ -88,41 +83,11 @@ function firstDistanceCardIn(cardTitle: string): CartaoDaDistancia {
 const ajudaDoSelo = (card: HTMLElement): HTMLElement =>
   within(card).getByRole("button", { name: /^Como ler Distância \d+ · / });
 
-const settingRecord = (key: string, value: string | number) => ({
-  key,
-  value,
-  valueType: typeof value === "number" ? "int" : "enum",
-  scope: "operational",
-  description: null,
-  updatedAt: "2026-08-26T00:00:00Z",
-  updatedBy: null,
-});
-
-/** A fixture tem duas pessoas na mesma distância: o limiar 2 as torna coletivas. */
-const thresholdTwoRoute: FetchRoute = (href, init) =>
-  href.endsWith(apiPath("/config/settings")) && (init?.method ?? "GET") === "GET"
-    ? jsonResponse({
-        settings: [
-          settingRecord("cycle.cadence", "SEMIANNUAL"),
-          settingRecord("career.minimumQualifiedFloor", 3),
-          settingRecord("training.collectiveInterventionThreshold", 2),
-        ],
-      })
-    : undefined;
-
-const stateWithoutPaths: AppState = { ...fixtureState, learningPaths: [] };
-
 const abrirPdi = async () => {
   mockAppFetch(fetchMock, {});
   window.history.pushState({}, "", "?professionalId=bruno");
   renderWithApp(<PlansPage />);
   await screen.findByText("Maiores distâncias");
-};
-
-const abrirCapacitacao = async () => {
-  mockAppFetch(fetchMock, { state: stateWithoutPaths, routes: [thresholdTwoRoute] });
-  renderWithApp(<NeedsPage />);
-  await screen.findByText("Treinamentos Recomendados para o Time");
 };
 
 describe("o cartão da distância se lê em linhas", () => {
@@ -190,21 +155,5 @@ describe("o cartão da distância se lê em linhas", () => {
 
     expect(bloco).toBe(linhas[linhas.length - 1]);
     expect(classesOf(bloco)).toContain("grid");
-  });
-
-  it("Treinamentos Recomendados para o Time: o mesmo arranjo, com a descrição no meio", async () => {
-    await abrirCapacitacao();
-
-    const { card, cabecalho, name, badge, linhas } = firstDistanceCardIn(
-      "Treinamentos Recomendados para o Time",
-    );
-
-    expect(name.contains(badge)).toBe(false);
-    expect(classesOf(cabecalho)).toContain("grid");
-    expect(classesOf(name)).toContain("col-span-2");
-    expect(ajudaDoSelo(card)).toBeTruthy();
-
-    expect(linhas.indexOf(cabecalho)).toBe(0);
-    expect(linhas[1]?.textContent).toContain("formato sugerido");
   });
 });

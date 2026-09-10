@@ -10,6 +10,5 @@
   "src/routes/index.tsx": 2,
   "src/routes/professionals.$professionalId.evolution.tsx": 1,
   "src/routes/professionals.$professionalId.index.tsx": 2,
-  "src/routes/teams.tsx": 1,
-  "src/routes/training-needs.tsx": 1
+  "src/routes/teams.tsx": 1
 }

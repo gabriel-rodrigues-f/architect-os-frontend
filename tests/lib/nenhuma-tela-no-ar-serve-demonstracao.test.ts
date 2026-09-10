@@ -28,10 +28,9 @@ function carimbados(container: FrontendContainer): [string, OriginatedData["data
 }
 
 describe("o container de produção só serve dado da organização", () => {
-  it("carimba avisos e calibração como dado da organização", () => {
+  it("carimba os avisos como dado da organização", () => {
     const container = FrontendContainer.create();
     expect(container.noticesGateway.dataOrigin).toBe("organization");
-    expect(container.calibrationGateway.dataOrigin).toBe("organization");
   });
 
   it("nenhum gateway composto exige declaração de demonstração", () => {

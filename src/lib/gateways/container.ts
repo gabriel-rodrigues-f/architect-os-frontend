@@ -11,7 +11,6 @@ import {
 import { HttpProfessionalsGateway, type ProfessionalsGateway } from "./professionals.gateway";
 import { HttpAssessmentGateway, type AssessmentGateway } from "./assessment.gateway";
 import { HttpAuthGateway, type AuthGateway } from "./auth.gateway";
-import { HttpCalibrationGateway, type CalibrationGateway } from "./calibration.gateway";
 import { HttpCareerGateway, type CareerGateway } from "./career.gateway";
 import { HttpCatalogGateway, type CatalogGateway } from "./catalog.gateway";
 import { HttpConfigGateway, type ConfigGateway } from "./config.gateway";
@@ -29,10 +28,6 @@ import { HttpReportsGateway, type ReportsGateway } from "./reports.gateway";
 import { HttpStateContextsGateway, type StateContextsGateway } from "./state-contexts.gateway";
 import { HttpTeamAllocationGateway, type TeamAllocationGateway } from "./team-allocation.gateway";
 import { HttpTeamRosterGateway, type TeamRosterGateway } from "./team-roster.gateway";
-import {
-  HttpTeamTransitionsGateway,
-  type TeamTransitionsGateway,
-} from "./team-transitions.gateway";
 import { HttpTeamsGateway, type TeamsGateway } from "./teams.gateway";
 import { HttpTeamTransfersGateway, type TeamTransfersGateway } from "./team-transfers.gateway";
 import { HttpWorkAssistantsGateway, type WorkAssistantsGateway } from "./work-assistants.gateway";
@@ -65,7 +60,6 @@ export class FrontendContainer {
   readonly professionalsGateway: ProfessionalsGateway;
   readonly assessmentGateway: AssessmentGateway;
   readonly authGateway: AuthGateway;
-  readonly calibrationGateway: CalibrationGateway;
   readonly careerGateway: CareerGateway;
   readonly catalogGateway: CatalogGateway;
   readonly configGateway: ConfigGateway;
@@ -81,7 +75,6 @@ export class FrontendContainer {
   readonly teamAllocationGateway: TeamAllocationGateway;
   readonly teamRosterGateway: TeamRosterGateway;
   readonly teamsGateway: TeamsGateway;
-  readonly teamTransitionsGateway: TeamTransitionsGateway;
   readonly teamTransfersGateway: TeamTransfersGateway;
   readonly workAssistantsGateway: WorkAssistantsGateway;
 
@@ -103,7 +96,6 @@ export class FrontendContainer {
     this.professionalsGateway = new HttpProfessionalsGateway(this.apiClient);
     this.assessmentGateway = new HttpAssessmentGateway(this.apiClient);
     this.authGateway = new HttpAuthGateway(this.apiClient);
-    this.calibrationGateway = new HttpCalibrationGateway(this.apiClient);
     this.careerGateway = new HttpCareerGateway(this.apiClient);
     this.catalogGateway = new HttpCatalogGateway(this.apiClient);
     this.configGateway = new HttpConfigGateway(this.apiClient);
@@ -121,7 +113,6 @@ export class FrontendContainer {
     this.teamAllocationGateway = new HttpTeamAllocationGateway(this.apiClient);
     this.teamRosterGateway = new HttpTeamRosterGateway(this.apiClient);
     this.teamsGateway = new HttpTeamsGateway(this.apiClient);
-    this.teamTransitionsGateway = new HttpTeamTransitionsGateway(this.apiClient);
     this.teamTransfersGateway = new HttpTeamTransfersGateway(this.apiClient);
     this.workAssistantsGateway = new HttpWorkAssistantsGateway(this.apiClient);
   }

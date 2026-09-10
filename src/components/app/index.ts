@@ -20,7 +20,6 @@ export * from "./ConfirmDialog";
 export * from "./DataOriginCallout";
 export * from "./DeactivatedPersonNotice";
 export * from "./EmptyStateCallToAction";
-export * from "./EvaluatorCalibrationRow";
 export * from "./FilterField";
 export * from "./FilterTriggerButton";
 export * from "./GapClosureSection";

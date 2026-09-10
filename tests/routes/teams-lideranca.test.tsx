@@ -106,14 +106,7 @@ const AMBOS_OS_TIMES = [
   rotaDosQuadros,
 ];
 
-const SO_O_TIME_COMPLETO = [
-  careerLevelsRoute,
-  rotaDeTimes([timesCompletoESemLideranca[0]!]),
-  emptyAuthUsers,
-  rotaDosQuadros,
-];
-
-/** O nome do time também aparece nas Pendências: a linha se busca DENTRO da tabela. */
+/** A linha se busca DENTRO da tabela, pelo nome do time. */
 const linhaDe = (nome: string): HTMLElement => {
   const tabela = screen.getByRole("table", { name: "Times cadastrados" });
   return within(tabela).getByText(nome).closest("tr") as HTMLElement;
@@ -165,48 +158,5 @@ describe("Times cadastrados diz quem lidera cada time", () => {
     const linha = linhaDe("Time Dados");
     expect(within(linha).getByText("Nenhum gerente")).toBeTruthy();
     expect(within(linha).getByText("Nenhum tech lead")).toBeTruthy();
-  });
-});
-
-describe("Pendências de configuração", () => {
-  it("conta os times sem gerente, sem tech lead e sem profissionais ativos", async () => {
-    renderAs(fixtureAdminUser, AMBOS_OS_TIMES);
-    await screen.findByText("Bia Nunes", {}, ESPERA);
-
-    for (const rotulo of [
-      "Times sem gerente",
-      "Times sem tech lead",
-      "Times sem profissionais ativos",
-    ]) {
-      const cartao = await screen.findByRole("region", { name: rotulo }, ESPERA);
-      expect(within(cartao).getByText("1")).toBeTruthy();
-      expect(within(cartao).getByText("Time Dados")).toBeTruthy();
-    }
-  });
-
-  it("conta o time sem régua para todos os níveis — a quarta pendência, a da REGRA 19", async () => {
-    renderAs(fixtureAdminUser, AMBOS_OS_TIMES);
-    await screen.findByText("Bia Nunes", {}, ESPERA);
-
-    const cartao = await screen.findByRole(
-      "region",
-      { name: "Times sem régua para todos os níveis" },
-      ESPERA,
-    );
-    expect(within(cartao).getByText("1")).toBeTruthy();
-    expect(within(cartao).getByText("Time Dados")).toBeTruthy();
-  });
-
-  it("sem pendência nenhuma, o bloco diz o ESTADO BOM em duas linhas — não fica vazio", async () => {
-    renderAs(fixtureAdminUser, SO_O_TIME_COMPLETO);
-    await screen.findByText("Bia Nunes", {}, ESPERA);
-
-    expect(await screen.findByText("Nenhuma pendência de configuração", {}, ESPERA)).toBeTruthy();
-    expect(
-      screen.getByText(
-        "Todo time ao seu alcance tem gerente, tech lead, gente ativa e régua para todos os níveis de carreira.",
-      ),
-    ).toBeTruthy();
-    expect(screen.queryByRole("region", { name: "Times sem gerente" })).toBeNull();
   });
 });

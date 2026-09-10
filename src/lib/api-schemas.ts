@@ -66,32 +66,6 @@ export const teamRosterMemberSchema = z.object({
 
 export const teamRosterResponseSchema = z.array(teamRosterMemberSchema);
 
-const calendarPeriodSchema = z.object({ from: z.string(), to: z.string() });
-
-const levelTransitionPairSchema = z.object({
-  fromRole: z.string(),
-  toRole: z.string(),
-  transitions: z.number(),
-  averageDaysInOriginLevel: z.number().nullable(),
-});
-
-const teamTransitionsRowSchema = z.object({
-  teamId: z.string(),
-  teamName: z.string(),
-  activeProfessionals: z.number(),
-  transitions: z.number(),
-  transitionsPerActiveProfessional: z.number().nullable(),
-  measuredOrigins: z.number(),
-  averageDaysInOriginLevel: z.number().nullable(),
-  pairs: z.array(levelTransitionPairSchema),
-});
-
-export const teamTransitionsResponseSchema = z.object({
-  period: calendarPeriodSchema,
-  teams: z.array(teamTransitionsRowSchema),
-  withoutRecordedTeam: z.number().nullable(),
-});
-
 export const careerStatementTeamTransitionsResponseSchema = z.object({
   entries: z.array(
     z.object({
@@ -154,40 +128,6 @@ const notice = z.object({
 export const noticesResponseSchema = z.object({
   notices: z.array(notice),
   unreadCount: z.number(),
-});
-
-const levelDistribution = z.object({
-  "1": z.number(),
-  "2": z.number(),
-  "3": z.number(),
-  "4": z.number(),
-  "5": z.number(),
-});
-
-const calibrationEvaluator = z.object({
-  userId: z.string(),
-  name: z.string(),
-  teamIds: z.array(z.string()),
-  distribution: levelDistribution,
-  average: z.number().nullable(),
-  itemsCount: z.number(),
-  assessmentsCount: z.number(),
-});
-
-export const calibrationResponseSchema = z.object({
-  cycleId: z.string(),
-  overall: z.object({
-    distribution: levelDistribution,
-    average: z.number().nullable(),
-  }),
-  evaluators: z.array(calibrationEvaluator),
-  unattributed: z
-    .object({
-      distribution: levelDistribution,
-      average: z.number().nullable(),
-      itemsCount: z.number(),
-    })
-    .optional(),
 });
 
 const gapCycleTotal = z.object({

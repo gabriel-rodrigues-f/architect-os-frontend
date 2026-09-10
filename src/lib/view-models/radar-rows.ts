@@ -7,8 +7,8 @@ interface RadarCapability {
 /**
  * Uma SÉRIE do radar e as médias que ela tem, por capacidade.
  *
- * No comparativo cada série é uma PESSOA; na ficha são duas, fixas — o que a
- * pessoa tem hoje e o alvo dela. O que não muda é a forma da ausência.
+ * Na ficha, no Painel e no radar de TIME são duas séries fixas — o que se tem
+ * hoje e o alvo. O que não muda é a forma da ausência.
  *
  * O valor é `number | undefined` de propósito: a origem (`capabilityAverages`)
  * devolve a chave da capacidade mesmo quando não há média, com o valor
@@ -21,8 +21,6 @@ interface RadarSeries {
   readonly id: string;
   readonly averages: ReadonlyMap<string, number | undefined>;
 }
-
-export type ComparisonRadarRow = Record<string, string | number | null>;
 
 /**
  * Quantas pessoas do recorte têm medida num eixo — só o radar de TIME informa
@@ -76,10 +74,12 @@ const TARGET = "alvo";
  *     para dentro. Basta UMA série ter medida para o eixo ficar — aí a
  *     diferença é justamente o que se quer ver.
  *
- * A classe nasceu para o Comparativo e a Visão geral da ficha herdou o mesmo
- * `?? 0`. Em vez de uma segunda régua, a régua ficou UMA — `measuredRows` — e
- * ganhou duas formas de linha: a do comparativo (uma coluna por pessoa) e a da
- * ficha (`atual` e `alvo`, do jeito que `CapabilityRadar` desenha).
+ * A classe nasceu para o Comparativo (Perfis lado a lado) e a Visão geral da
+ * ficha herdou o mesmo `?? 0`. Em vez de uma segunda régua, a régua ficou UMA
+ * — `measuredRows`. O Comparativo saiu do produto em 2026-09-10 e levou junto
+ * a forma dele (`RadarRows.of`, uma coluna por pessoa); a régua FICA, com a
+ * forma da ficha (`atual` e `alvo`, do jeito que `CapabilityRadar` desenha),
+ * e é ela que os três radares restantes usam.
  *
  * Os outros DOIS lugares com o mesmo defeito — o radar do próprio profissional
  * no Painel e o radar de TIME da Análise de Lacunas — entraram na segunda
@@ -90,20 +90,6 @@ const TARGET = "alvo";
  */
 export class RadarRows {
   private constructor() {}
-
-  /** O comparativo: uma coluna por pessoa comparada. */
-  static of(
-    capabilities: readonly RadarCapability[],
-    series: readonly RadarSeries[],
-  ): ComparisonRadarRow[] {
-    return RadarRows.measuredRows(capabilities, series, (capability, values) => {
-      const row: ComparisonRadarRow = { capability: capability.name };
-      series.forEach((serie, ordem) => {
-        row[serie.id] = values[ordem] ?? null;
-      });
-      return row;
-    });
-  }
 
   /**
    * Duas séries fixas — o que se tem hoje e o alvo. É a forma da ficha (uma

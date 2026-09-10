@@ -27,9 +27,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
-import { Route as CalibrationRoute } from "@/routes/calibration";
 import { Route as CapabilityMapRoute } from "@/routes/capability-map";
-import { Route as CompareRoute } from "@/routes/compare";
 import { Route as CyclesRoute } from "@/routes/cycles";
 import { Route as DevelopmentPlansRoute } from "@/routes/development-plans";
 import { Route as GapAnalysisRoute } from "@/routes/gap-analysis";
@@ -67,9 +65,7 @@ import {
 const fetchMock = vi.fn();
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
-const CalibrationPage = CalibrationRoute.options.component as () => ReactNode;
 const CapabilityMapPage = CapabilityMapRoute.options.component as () => ReactNode;
-const ComparePage = CompareRoute.options.component as () => ReactNode;
 const CyclesPage = CyclesRoute.options.component as () => ReactNode;
 const DevelopmentPlansPage = DevelopmentPlansRoute.options.component as () => ReactNode;
 const GapAnalysisPage = GapAnalysisRoute.options.component as () => ReactNode;
@@ -144,12 +140,6 @@ const TELAS: { tela: string; pagina: () => ReactNode; linha1: string; linha2: st
       "Cadastre profissionais em Time e abra uma avaliação do ciclo para ver as competências em evolução aqui.",
   },
   {
-    tela: "Perfis lado a lado",
-    pagina: ComparePage,
-    linha1: NENHUM_PROFISSIONAL,
-    linha2: "Cadastre profissionais para comparar dois perfis lado a lado.",
-  },
-  {
     tela: "Plano de Desenvolvimento Individual",
     pagina: DevelopmentPlansPage,
     linha1: NENHUM_PROFISSIONAL,
@@ -179,13 +169,6 @@ const TELAS: { tela: string; pagina: () => ReactNode; linha1: string; linha2: st
     linha1: NENHUM_TIME,
     linha2:
       "A régua é de um time num nível de carreira: sem time cadastrado não há régua a definir.",
-  },
-  {
-    tela: "Calibração",
-    pagina: CalibrationPage,
-    linha1: NENHUM_CICLO,
-    linha2:
-      "A calibração compara avaliações dentro de um ciclo. Cadastre o primeiro ciclo para começar.",
   },
 ];
 
@@ -228,7 +211,12 @@ describe("com o banco vazio, toda tela diz duas linhas", () => {
     });
   }
 
-  it("as doze telas do dono estão todas nesta lista", () => {
-    expect(TELAS).toHaveLength(12);
+  /*
+   * Eram DOZE até 2026-09-10, quando Perfis lado a lado e Calibração de
+   * Líderes saíram do produto a pedido do dono. A régua das duas linhas não
+   * mudou; a lista é que perdeu duas telas.
+   */
+  it("as dez telas do dono estão todas nesta lista", () => {
+    expect(TELAS).toHaveLength(10);
   });
 });

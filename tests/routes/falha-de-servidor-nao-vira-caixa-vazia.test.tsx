@@ -24,13 +24,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { apiPath } from "@/lib/api-path";
-import { Route as CalibrationRoute } from "@/routes/calibration";
 import { Route as NoticesRoute } from "@/routes/notices";
-import {
-  fixtureAssignedManagerUser,
-  fixtureAssignedTechLeadUser,
-  fixtureState,
-} from "../helpers/fixtures";
+import { fixtureAssignedTechLeadUser, fixtureState } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
@@ -63,11 +58,10 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
 const fetchMock = vi.fn();
 
 const NoticesPage = NoticesRoute.options.component as () => ReactNode;
-const CalibrationPage = CalibrationRoute.options.component as () => ReactNode;
 
-const FALHA_DE_CALIBRACAO = "Não foi possível carregar a calibração.";
+const FALHA_DE_AVISOS = "Não foi possível carregar os avisos.";
 const CAIXA_VAZIA = "Nenhum aviso";
-const CICLO_SEM_NOTA = "Nenhuma avaliação com nota neste ciclo";
+const TENTAR_DE_NOVO = "Tentar novamente";
 const RECARREGAR = "Recarregar";
 const TELA_DE_QUEDA = "service-outage";
 
@@ -122,72 +116,5 @@ describe("a Central de avisos declara a falha em vez de dizer que não há aviso
     renderWithApp(<NoticesPage />);
     await screen.findByTestId(TELA_DE_QUEDA);
     expect(screen.getByRole("button", { name: RECARREGAR })).toBeTruthy();
-  });
-});
-
-describe("a Calibração declara a falha em vez de dizer que ninguém deu nota", () => {
-  beforeEach(() => {
-    fetchMock.mockReset();
-    vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, {
-      user: fixtureAssignedManagerUser,
-      state: fixtureState,
-      routes: [rotaQueFalha("/calibration")],
-    });
-  });
-
-  it("com a leitura falhando, a tela mostra a queda, não o ciclo sem notas", async () => {
-    renderWithApp(<CalibrationPage />);
-    expect(await screen.findByTestId(TELA_DE_QUEDA)).toBeTruthy();
-    expect(screen.queryByText(CICLO_SEM_NOTA)).toBeNull();
-  });
-
-  it("a falha não desenha KPI nenhum — média geral inventada seria pior que tela vazia", async () => {
-    renderWithApp(<CalibrationPage />);
-    await screen.findByTestId(TELA_DE_QUEDA);
-    expect(screen.queryByText("Média geral")).toBeNull();
-    expect(screen.queryByText("Avaliadores")).toBeNull();
-  });
-
-  it("a falha vem com o convite de tentar de novo", async () => {
-    renderWithApp(<CalibrationPage />);
-    await screen.findByTestId(TELA_DE_QUEDA);
-    expect(screen.getByRole("button", { name: RECARREGAR })).toBeTruthy();
-  });
-});
-
-/**
- * REGRA 18 (dono, 2026-09-09): a recusa da calibração é de ALCANCE, e passa a
- * chegar como 404 — o mesmo número e o mesmo corpo de um ciclo que não
- * existe, que é justamente o ponto: o número deixa de contar quem existe.
- *
- * Para esta tela nada disso muda o que a pessoa lê, e é isso que o teste
- * guarda: recusa e ausência caem na mesma falha de leitura declarada, nunca
- * na caixa vazia que diria "nenhuma avaliação com nota" para quem sequer
- * podia perguntar. O caso do 403 fica ao lado porque a recusa de ATO continua
- * existindo, e ela também não pode virar caixa vazia.
- */
-describe("negativa de acesso também é falha declarada, não caixa vazia", () => {
-  const renderComRecusa = (status: number) => {
-    fetchMock.mockReset();
-    vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, {
-      user: fixtureAssignedManagerUser,
-      state: fixtureState,
-      routes: [rotaQueFalha("/calibration", status)],
-    });
-    renderWithApp(<CalibrationPage />);
-  };
-
-  it("404 na calibração mostra a falha de leitura, não 'nenhuma avaliação com nota'", async () => {
-    renderComRecusa(404);
-    expect(await screen.findByText(FALHA_DE_CALIBRACAO)).toBeTruthy();
-    expect(screen.queryByText(CICLO_SEM_NOTA)).toBeNull();
-  });
-
-  it("403 na calibração também é falha de leitura — a recusa de ato não sumiu", async () => {
-    renderComRecusa(403);
-    expect(await screen.findByText(FALHA_DE_CALIBRACAO)).toBeTruthy();
-    expect(screen.queryByText(CICLO_SEM_NOTA)).toBeNull();
   });
 });

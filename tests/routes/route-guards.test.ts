@@ -6,7 +6,6 @@ import { createAppQueryClient } from "@/lib/query-client";
 import { routeTree } from "@/routeTree.gen";
 import {
   requirePeopleAdministrationReach,
-  requireCalibrationReach,
   requireCareerTabsReach,
   requireLeadReach,
   requireLeadershipReach,
@@ -67,7 +66,7 @@ afterEach(() => {
 /**
  * PR 5 (adendo do dono, 2026-09-08) — cinco papéis. SUPPORT tem o alcance do
  * antigo admin (opera o sistema); ADMIN tem o alcance de ORGANIZAÇÃO: todas
- * as rotas de leitura mais a administração. Nenhum dos dois calibra — é rito
+ * as rotas de leitura mais a administração. É rito
  * do gerente com vínculo.
  */
 describe("guardas de navegação — SUPPORT opera o sistema, ADMIN lê a organização", () => {
@@ -87,9 +86,8 @@ describe("guardas de navegação — SUPPORT opera o sistema, ADMIN lê a organi
     expect(await navegarComoUsuario(fixtureSupportUser, href)).toBe(href);
   });
 
-  it("SUPPORT sem vínculo não alcança a análise de time nem a calibração", async () => {
+  it("SUPPORT sem vínculo não alcança a análise de time", async () => {
     expect(await navegarComoUsuario(fixtureSupportUser, "/capability-map")).toBe("/");
-    expect(await navegarComoUsuario(fixtureSupportUser, "/calibration")).toBe("/");
   });
 
   it.each([
@@ -110,11 +108,6 @@ describe("guardas de navegação — SUPPORT opera o sistema, ADMIN lê a organi
   ])("ADMIN alcança %s — leitura da organização inteira e administração", async (href) => {
     expect(await navegarComoUsuario(fixtureAdminUser, href)).toBe(href);
   });
-
-  it("ADMIN calibra — o administrador faz tudo (regra 6, 2026-09-08); o suporte não", async () => {
-    expect(await navegarComoUsuario(fixtureAdminUser, "/calibration")).toBe("/calibration");
-    expect(await navegarComoUsuario(fixtureSupportUser, "/calibration")).toBe("/");
-  });
 });
 
 describe("guardas de navegação das telas administrativas", () => {
@@ -124,24 +117,6 @@ describe("guardas de navegação das telas administrativas", () => {
 
   it("nega /competency-matrix a quem não é admin", async () => {
     expect(await navegarComoUsuario(fixtureMemberUser, "/competency-matrix")).toBe("/");
-  });
-
-  it("nega /calibration ao member na navegação interna (PRD-03: só gerente+admin)", async () => {
-    expect(await navegarComoUsuario(fixtureMemberUser, "/calibration")).toBe("/");
-  });
-
-  it("nega /calibration ao tech lead — é a metade da liderança que o contrato exclui", async () => {
-    expect(await navegarComoUsuario(fixtureAssignedTechLeadUser, "/calibration")).toBe("/");
-  });
-
-  it("nega /calibration ao suporte — calibração é rito de gestão, e o suporte opera o sistema", async () => {
-    expect(await navegarComoUsuario(fixtureSupportUser, "/calibration")).toBe("/");
-  });
-
-  it("abre /calibration para o gerente", async () => {
-    expect(await navegarComoUsuario(fixtureAssignedManagerUser, "/calibration")).toBe(
-      "/calibration",
-    );
   });
 
   it("mantém /users aberta para admin", async () => {
@@ -255,8 +230,8 @@ describe("requirePeopleAdministrationReach — Usuários e Times", () => {
  *
  * `requireAdminReach` já tem a metade de navegação coberta acima; esta
  * metade prova que a guarda NOVA nega quem não rege régua nenhuma — a
- * repetição do vazamento da onda 17 (`/calibration` por URL direta) é o que
- * este arquivo existe para impedir.
+ * repetição do vazamento da onda 17 (uma tela alcançada por URL direta) é o
+ * que este arquivo existe para impedir.
  */
 async function alcancaTelaDaRegua(user: SessionUser): Promise<boolean> {
   const queryClient = createAppQueryClient();
@@ -285,55 +260,6 @@ describe("requireLeadReach — a guarda da régua do time", () => {
 
   it("deixa passar o admin", async () => {
     expect(await alcancaTelaDaRegua(fixtureAdminUser)).toBe(true);
-  });
-});
-
-/**
- * CONTRATO PRD-03, "visível só para gerente + admin" — a 3ª guarda do arquivo.
- * A calibração era `requireAdminReach` por FALTA de vocabulário: com um único
- * papel `lead`, abrir a rota teria entregado a leitura ao tech lead, que o
- * contrato exclui. Os quatro papéis (backend ADR-0047) tornam a linha
- * dizível, e esta é a metade de navegação dela.
- *
- * O alcance é o PAPEL, não o vínculo: o contrato fala de gerente, sem dizer
- * "gerente daquele time" — a calibração é uma leitura de distribuição entre
- * avaliadores, não uma ação sobre alguém. Por isso o gerente SEM vínculo
- * nenhum também passa, e o caso está aqui para que essa escolha seja
- * deliberada, e não um efeito colateral da fixture.
- */
-async function alcancaCalibracao(user: SessionUser): Promise<boolean> {
-  const queryClient = createAppQueryClient();
-  queryClient.setQueryData(SESSION_QUERY_KEY, user);
-  try {
-    await requireCalibrationReach({ context: { queryClient } });
-    return true;
-  } catch (erro) {
-    if (isRedirect(erro)) return false;
-    throw erro;
-  }
-}
-
-describe("requireCalibrationReach — a guarda da leitura de calibração", () => {
-  it("nega a quem é member", async () => {
-    expect(await alcancaCalibracao(fixtureMemberUser)).toBe(false);
-  });
-
-  it("nega ao tech lead, mesmo com vínculo no time", async () => {
-    expect(await alcancaCalibracao(fixtureAssignedTechLeadUser)).toBe(false);
-  });
-
-  it("deixa passar o gerente", async () => {
-    expect(await alcancaCalibracao(fixtureAssignedManagerUser)).toBe(true);
-  });
-
-  it("nega o gerente SEM vínculo — sem time não há quem calibrar", async () => {
-    const gestorSemVinculo: SessionUser = { ...fixtureAssignedManagerUser, memberships: [] };
-    expect(await alcancaCalibracao(gestorSemVinculo)).toBe(false);
-  });
-
-  it("deixa passar o administrador (regra 6) e nega o suporte", async () => {
-    expect(await alcancaCalibracao(fixtureAdminUser)).toBe(true);
-    expect(await alcancaCalibracao(fixtureSupportUser)).toBe(false);
   });
 });
 
@@ -485,20 +411,19 @@ describe("guardas de navegação do cadastro de times", () => {
 /**
  * Onda 33 — achado (4) da revisão de PO (2026-09-02): a decisão "o
  * profissional não vê os próprios números" estava executada pela metade.
- * Ciclos mostrava a ele "Nível final por ciclo: L4 → L5", e as cinco telas
+ * Ciclos mostrava a ele "Nível final por ciclo: L4 → L5", e as telas
  * de análise do time — tiradas do MENU na onda 31 — "saíram do menu e
  * ficaram na URL, com os números dele dentro". Aqui se fecha a URL: Ciclos
- * entra na régua da liderança (`requireLeadershipReach`) e as cinco ganham
- * a guarda nomeada `requireTeamAnalysisReach`, sobre `canAnalyzeTeam` — a
+ * entra na régua da liderança (`requireLeadershipReach`) e as de análise
+ * ganham a guarda nomeada `requireTeamAnalysisReach`, sobre `canAnalyzeTeam` — a
  * MESMA política que já recortava o menu, agora ligada na navegação.
  */
-const ANALISE_DO_TIME = [
-  "/progression",
-  "/gap-analysis",
-  "/training-needs",
-  "/capability-map",
-  "/compare",
-];
+/*
+ * Eram CINCO até 2026-09-10, quando o Plano de Capacitação (`/training-needs`)
+ * e os Perfis lado a lado (`/compare`) saíram do produto a pedido do dono. A
+ * guarda e a política são as mesmas; o conjunto é que encolheu para três.
+ */
+const ANALISE_DO_TIME = ["/progression", "/gap-analysis", "/capability-map"];
 
 describe("o profissional não navega até Ciclos nem até a análise do time", () => {
   it("nega /cycles ao member", async () => {
@@ -520,7 +445,7 @@ describe("o profissional não navega até Ciclos nem até a análise do time", (
     }
   });
 
-  it("a análise do time — as cinco — é de quem lidera COM vínculo: gerente e tech lead (dono, 2026-09-06)", async () => {
+  it("a análise do time — as três — é de quem lidera COM vínculo: gerente e tech lead (dono, 2026-09-06)", async () => {
     for (const href of ANALISE_DO_TIME) {
       expect(await navegarComoUsuario(fixtureAssignedManagerUser, href), href).toBe(href);
       expect(await navegarComoUsuario(fixtureAssignedTechLeadUser, href), href).toBe(href);

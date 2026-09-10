@@ -21,7 +21,6 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as AssessmentsRoute } from "@/routes/assessments";
-import { Route as CompareRoute } from "@/routes/compare";
 import { Route as GapAnalysisRoute } from "@/routes/gap-analysis";
 import { Route as LearningPathsRoute } from "@/routes/learning-paths";
 import { Route as MentoringRoute } from "@/routes/mentoring";
@@ -31,7 +30,6 @@ import type { Professional } from "@/lib/domain";
 import {
   fixtureAdminUser,
   fixtureAssignedManagerUser,
-  fixtureAssignedTechLeadUser,
   fixtureState,
   fixtureTeamId,
   scopedFixtureStateFor,
@@ -91,7 +89,6 @@ const comInativa: AppState = {
 };
 
 const AssessmentsPage = AssessmentsRoute.options.component as () => ReactNode;
-const ComparePage = CompareRoute.options.component as () => ReactNode;
 const GapAnalysisPage = GapAnalysisRoute.options.component as () => ReactNode;
 const LearningPathsPage = LearningPathsRoute.options.component as () => ReactNode;
 const MentoringPage = MentoringRoute.options.component as () => ReactNode;
@@ -101,15 +98,10 @@ const TeamPage = TeamRoute.options.component as () => ReactNode;
 const nomesDasOpcoes = (): string[] =>
   screen.getAllByRole("option").map((opcao) => opcao.textContent?.trim() ?? "");
 
-/** O filtro de pessoas do Comparativo é a `PersonCombobox` "Profissionais para comparar". */
-const gatilhoDoFiltroDePessoas = (): HTMLElement =>
-  screen.getByRole("combobox", { name: "Profissionais para comparar" });
-
 /**
  * Revisão de papéis (dono, 2026-09-05): cada tela tem o SEU ator. As telas de
  * pessoa (Avaliações, Mentoria, Trilhas, Competências em evolução) são do
- * gerente vinculado; o Comparativo, do tech lead vinculado (D5); a composição
- * do Time, do admin. O payload de cada um é o recorte que o servidor faria —
+ * gerente vinculado; a composição do Time, do admin. O payload de cada um é o recorte que o servidor faria —
  * e Raquel, inativa, vem no recorte da liderança porque está no time.
  */
 const comoAtor = (user: SessionUser) =>
@@ -154,18 +146,6 @@ describe("profissional desativado some da aplicação", () => {
     expect(nomes).toContain("Bruno Almeida");
     expect(nomes).not.toContain("Raquel Marangoni");
     expect(nomes).not.toContain("Raquel Marangoni (inativo)");
-  });
-
-  it("Comparativo: a lista de pessoas para comparar não oferece quem está desativado", async () => {
-    comoAtor(fixtureAssignedTechLeadUser);
-    renderWithApp(<ComparePage />);
-
-    await screen.findByText("Perfis lado a lado");
-    await userEvent.click(gatilhoDoFiltroDePessoas());
-
-    const nomes = nomesDasOpcoes();
-    expect(nomes).toContain("Ana Martins");
-    expect(nomes).not.toContain("Raquel Marangoni");
   });
 
   it("Trilhas: a nova trilha não oferece quem está desativado para atribuição", async () => {
