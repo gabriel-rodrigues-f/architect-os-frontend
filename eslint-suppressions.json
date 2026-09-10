@@ -131,7 +131,7 @@
   },
   "src/lib/presenters/dashboard-presenter.ts": {
     "id-length": {
-      "count": 17
+      "count": 16
     }
   },
   "src/lib/presenters/team-report-presenter.ts": {
@@ -396,7 +396,7 @@
   },
   "tests/lib/presenters/dashboard-presenter.test.ts": {
     "id-length": {
-      "count": 23
+      "count": 16
     }
   },
   "tests/lib/scoring-bands.test.ts": {

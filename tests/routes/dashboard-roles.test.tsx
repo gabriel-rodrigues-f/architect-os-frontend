@@ -178,15 +178,20 @@ describe("Painel — Home por papel", () => {
     renderAsLeaderOfAna(fixtureGestorDeAna);
     await screen.findByText("Ações da Liderança");
     expect(screen.queryByText("Painel de Capacidades")).toBeNull();
-    // "Ana Martins" só aparece no Painel do líder dentro da fila de pendências.
-    expect(await screen.findByText("Ana Martins")).toBeTruthy();
+    /*
+     * "Ana Martins" aparece em MAIS DE UMA lista desde a onda 1 do Painel: a
+     * fila de pendências e os sinais de acompanhamento (1:1 e trilha) terminam
+     * todos em nome, de propósito. O que se afirma aqui é que o nome aparece
+     * para quem lidera, não quantas vezes.
+     */
+    expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
   });
 
   it("tech lead vê 'Pendências do Lead', nunca a visão executiva do admin", async () => {
     renderAsLeaderOfAna(fixtureTechLeadDeAna);
     await screen.findByText("Ações da Liderança");
     expect(screen.queryByText("Painel de Capacidades")).toBeNull();
-    expect(await screen.findByText("Ana Martins")).toBeTruthy();
+    expect((await screen.findAllByText("Ana Martins")).length).toBeGreaterThan(0);
   });
 
   it("sessão de liderança SEM vínculo vê o estado vazio mesmo com gente no payload — o alcance é o vínculo (dono, 2026-09-05)", async () => {

@@ -19,21 +19,17 @@ export function CardHelp({ title, what, how }: { title: string; what: string; ho
   );
 }
 
+/**
+ * Os cartões do Painel que TÊM chamador. Eram quinze declarados, com texto
+ * escrito em duas línguas; dez deles falavam de cartões que já não existiam
+ * na tela (`painel-executivo-analise-2026-09-09.md`, A.4). Ajuda de cartão
+ * sem cartão é dicionário morto: saiu daqui e saiu dos dois catálogos.
+ */
 export const DASHBOARD_CARDS = [
-  "professionals",
   "activePlans",
-  "criticalGaps",
-  "goalsInProgress",
-  "goalsDone",
-  "mentoring",
-  "paths",
-  "priorities",
   "cycleAssessment",
   "severity",
   "memberAssessment",
-  "leadPeople",
-  "leadCalibration",
-  "leadApproval",
   "leadActions",
 ] as const;
 export type DashboardCard = (typeof DASHBOARD_CARDS)[number];

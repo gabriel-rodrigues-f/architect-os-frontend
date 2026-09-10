@@ -50,15 +50,6 @@ describe("DashboardPresenter", () => {
     expect(presenterFor(withCriticalGap).presenter.criticalGapCount(professionals)).toBe(1);
   });
 
-  it("topGaps respeita o limite e ordena do maior gap para o menor", () => {
-    const { presenter } = presenterFor(fixtureState);
-    const top = presenter.topGaps(professionals, 2);
-    expect(top).toHaveLength(2);
-    expect(top[0]!.gap).toBeGreaterThanOrEqual(top[1]!.gap);
-    const all = presenter.topGaps(professionals);
-    expect(all.map((g) => g.gap)).toEqual([...all.map((g) => g.gap)].sort((a, b) => b - a));
-  });
-
   it("assessmentCoverage soma exatamente population.length, com 'sem assessment' em notStarted", () => {
     const semAssessmentDoBruno: AppState = {
       ...fixtureState,
@@ -159,13 +150,14 @@ describe("DashboardPresenter com limiar configurado (CFG-02)", () => {
 });
 
 /**
- * F2 (caminhos quentes) — `topGaps` ordenava os ~3.588 gaps do time inteiro
- * só para mostrar 6 linhas, e `gapsOf` era refeito a cada chamada (o painel
- * chama duas vezes por render: `criticalGapCount` e `topGaps`). Estes casos
- * são de caracterização: fixam a SAÍDA de hoje — inclusive o desempate entre
- * gaps de mesmo tamanho, que a ordenação estável do JavaScript resolve pela
- * ordem de origem — para que a troca por seleção dos N maiores sem ordenar
- * tudo seja provadamente equivalente, não "parecida".
+ * F2 (caminhos quentes) — o painel varre os gaps do time inteiro mais de uma
+ * vez por render (`criticalGapCount` e a lista nominal de distância crítica),
+ * e `gapsOf` era refeito a cada chamada. Estes casos fixam a ORDEM da
+ * varredura e o reaproveitamento do cálculo.
+ *
+ * Os três casos de `topGaps` que moravam aqui saíram com o método: ele não
+ * tinha um único chamador em `src/` — só o próprio teste
+ * (`painel-executivo-analise-2026-09-09.md`, A.4).
  */
 describe("DashboardPresenter — prioridades do painel em escala (F2)", () => {
   const PROFESSIONALS = 8;
@@ -259,33 +251,6 @@ describe("DashboardPresenter — prioridades do painel em escala (F2)", () => {
 
     expect(presenter.gapsOf(state.professionals).map(rowKey)).toEqual(esperado);
     expect(esperado).toHaveLength(PROFESSIONALS * COMPETENCIES);
-  });
-
-  it("topGaps é idêntico a ordenar tudo por gap desc e cortar — inclusive no empate", () => {
-    const presenter = presenterFor();
-    const todos = presenter.gapsOf(state.professionals);
-    // referência: exatamente o algoritmo antigo (sort estável + slice).
-    const referencia = (limit: number) =>
-      [...todos]
-        .sort((a, b) => b.gap - a.gap)
-        .slice(0, limit)
-        .map(rowKey);
-
-    for (const limit of [0, 1, 2, 6, 7, 20, todos.length, todos.length + 5]) {
-      expect(presenter.topGaps(state.professionals, limit).map(rowKey)).toEqual(referencia(limit));
-    }
-    // o default do painel são 6 linhas
-    expect(presenter.topGaps(state.professionals).map(rowKey)).toEqual(referencia(6));
-    // o cenário precisa ter empates, senão o teste não prova nada sobre desempate
-    const seis = presenter.topGaps(state.professionals).map((g) => g.gap);
-    expect(new Set(seis).size).toBeLessThan(seis.length);
-  });
-
-  it("topGaps não reordena a lista base nem os gaps do selector", () => {
-    const presenter = presenterFor();
-    const antes = presenter.gapsOf(state.professionals).map(rowKey);
-    presenter.topGaps(state.professionals, 6);
-    expect(presenter.gapsOf(state.professionals).map(rowKey)).toEqual(antes);
   });
 
   it("criticalGapCount continua contando todos os gaps acima do limiar", () => {

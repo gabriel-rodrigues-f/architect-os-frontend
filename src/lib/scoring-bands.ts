@@ -230,6 +230,124 @@ export class GapSeverityRuler {
   }
 }
 
+/** A leitura de uma faixa: o tom que a tela pinta e a frase que a nomeia. */
+export interface BandReading {
+  readonly tone: BandTone;
+  readonly labelKey: MessageKey;
+}
+
+/**
+ * A RÉGUA DE COBERTURA da avaliação do ciclo.
+ *
+ * Os cortes NÃO são invenção desta fatia: saem da leitura escrita na análise
+ * do Painel (`direcao/painel-executivo-analise-2026-09-09.md`, D.2, KPI 1) —
+ * *"abaixo de 70%, o ciclo não foi lido e o resto do painel é amostra. Acima
+ * de 90%, dá para decidir em cima dele."*
+ *
+ * Ela NÃO entra em `SCORING_SCALES`: aquele conjunto é contrato com a rota de
+ * configuração do backend (`config-bands`), e esta onda é só frontend, sem
+ * rota nova nem mudança de contrato. Quando os cortes forem assinados pelo
+ * dono e nascerem em `scoring_bands` no banco, esta constante vira o padrão
+ * de quem não recebeu nada do servidor, como as outras três já fazem.
+ */
+const COVERAGE_BANDS: readonly [DefaultScoringBand, ...DefaultScoringBand[]] = [
+  {
+    key: "unread",
+    minValue: null,
+    maxValue: 0.7,
+    labelKey: "dash.coverage.band.unread",
+    tone: "critical",
+    sortOrder: 1,
+  },
+  {
+    key: "partial",
+    minValue: 0.7,
+    maxValue: 0.9,
+    labelKey: "dash.coverage.band.partial",
+    tone: "high",
+    sortOrder: 2,
+  },
+  {
+    key: "read",
+    minValue: 0.9,
+    maxValue: null,
+    labelKey: "dash.coverage.band.read",
+    tone: "ok",
+    sortOrder: 3,
+  },
+];
+
+export class CoverageRuler {
+  private static readonly bands = ScoringBandSet.of(COVERAGE_BANDS);
+
+  /** `ratio` é a fração de pessoas em escopo com avaliação concluída, de 0 a 1. */
+  static read(ratio: number): BandReading {
+    const band = CoverageRuler.bands.classify(ratio);
+    return {
+      tone: band.tone,
+      labelKey: ScoringBandSet.messageKeyOr(band.labelKey, "dash.coverage.band.partial"),
+    };
+  }
+}
+
+/**
+ * A RÉGUA DE CONCENTRAÇÃO DE DISTÂNCIA CRÍTICA.
+ *
+ * O defeito que ela fecha: a régua antiga devolvia "crítico" para qualquer
+ * contagem acima de zero, então o cartão nunca deixava de estar vermelho — e
+ * uma cor que nunca muda deixou de ser informação.
+ *
+ * O que ela lê é a PROPORÇÃO de distâncias críticas sobre as distâncias
+ * abaixo do esperado, e não a contagem: contagem não tem denominador, e "21
+ * críticas" quer dizer coisas opostas num time de 3 e num de 300. O
+ * denominador é o mesmo que a legenda do cartão já publica ("N críticas de M
+ * distâncias abaixo do esperado"), então nada aparece na tela sem base.
+ *
+ * ESTE CORTE É NOVO E PRECISA DA ASSINATURA DO DONO (a análise já o listou na
+ * fila dele): um quarto do que está abaixo do esperado sendo crítico é o
+ * ponto em que a distância deixa de ser cauda e vira a forma do time.
+ */
+const CRITICAL_CONCENTRATION_BANDS: readonly [DefaultScoringBand, ...DefaultScoringBand[]] = [
+  {
+    key: "none",
+    minValue: null,
+    maxValue: 0.0001,
+    labelKey: "dash.severity.band.none",
+    tone: "ok",
+    sortOrder: 1,
+  },
+  {
+    key: "tail",
+    minValue: 0.0001,
+    maxValue: 0.25,
+    labelKey: "dash.severity.band.tail",
+    tone: "high",
+    sortOrder: 2,
+  },
+  {
+    key: "concentrated",
+    minValue: 0.25,
+    maxValue: null,
+    labelKey: "dash.severity.band.concentrated",
+    tone: "critical",
+    sortOrder: 3,
+  },
+];
+
+export class CriticalConcentrationRuler {
+  private static readonly bands = ScoringBandSet.of(CRITICAL_CONCENTRATION_BANDS);
+
+  /** Sem nenhuma distância abaixo do esperado não há o que concentrar: é zero. */
+  static read(critical: number, open: number): BandReading {
+    const share = open > 0 ? critical / open : 0;
+    const band = CriticalConcentrationRuler.bands.classify(share);
+    return {
+      tone: band.tone,
+      labelKey: ScoringBandSet.messageKeyOr(band.labelKey, "dash.severity.band.tail"),
+    };
+  }
+}
+
 export class ScoringRuler {
   private constructor(readonly scales: ScoringBands) {}
 

@@ -1,5 +1,11 @@
 import type { AppState, SessionUser } from "../api";
-import type { Professional, Assessment, DevelopmentPlan, LearningPath } from "../domain";
+import type {
+  Professional,
+  Assessment,
+  DevelopmentPlan,
+  LearningPath,
+  MentoringSession,
+} from "../domain";
 import { defaultUiAuthorizationPolicy, type UiAuthorizationPolicy } from "../scope";
 import { defaultGapSeverityRuler, type BandTone, type GapSeverityRuler } from "../scoring-bands";
 import type { Gap, Selectors } from "../selectors";
@@ -27,6 +33,30 @@ interface ProfessionalAwaitingApproval {
   plan: DevelopmentPlan | undefined;
 }
 
+/** Quantas distâncias críticas UMA pessoa carrega — o nome por trás do agregado. */
+export interface ProfessionalCriticalGaps {
+  professional: Professional;
+  count: number;
+}
+
+/** Há quantos dias a pessoa não tem uma 1:1 registrada. `null` = nunca teve. */
+export interface OneOnOneRecency {
+  professional: Professional;
+  days: number | null;
+}
+
+/** A 1:1 de retorno que ficou para trás, com o dia que foi marcado. */
+export interface OverdueFollowUp {
+  professional: Professional;
+  dueOn: string;
+}
+
+/** A trilha que a pessoa tem atribuída e ainda não moveu nenhum item. */
+export interface StalledPath {
+  professional: Professional;
+  path: LearningPath;
+}
+
 /**
  * As filas que esperam uma decisão da liderança. Eram três; a de evidências a
  * revisar saiu com a evidência (dono, 2026-09-08, regra 17), e `totalPending`
@@ -50,7 +80,7 @@ export class DashboardPresenter {
   constructor(
     private readonly state: Pick<
       AppState,
-      "professionals" | "plans" | "learningPaths" | "cycles" | "activeCycleId"
+      "professionals" | "plans" | "learningPaths" | "mentoringSessions" | "cycles" | "activeCycleId"
     >,
     private readonly sel: Pick<Selectors, "progressionGapsFor" | "assessmentFor" | "planFor">,
     private readonly criticalGapThreshold: number = CRITICAL_GAP_THRESHOLD,
@@ -108,12 +138,50 @@ export class DashboardPresenter {
     return this.gapsOf(population).filter((g) => g.gap >= this.criticalGapThreshold).length;
   }
 
-  topGaps(population: readonly Professional[], limit = 6): GapWithProfessional[] {
-    return this.largestBy(this.gapsOf(population), (gap) => gap.gap, limit);
+  /**
+   * QUEM tem distância crítica, e quantas — do maior para o menor.
+   *
+   * O agregado sozinho ("21 distâncias críticas na organização") apaga a
+   * única informação que muda decisão: no banco do dono, 100% das 21 estavam
+   * em DUAS pessoas. Nesta escala, "onde agir" não tem resolução
+   * organizacional — resolve em nomes.
+   */
+  criticalGapsByProfessional(
+    population: readonly Professional[],
+  ): readonly ProfessionalCriticalGaps[] {
+    const byProfessional = new Map<string, ProfessionalCriticalGaps>();
+    for (const gap of this.gapsOf(population)) {
+      if (gap.gap < this.criticalGapThreshold) continue;
+      const entry = byProfessional.get(gap.professional.id);
+      if (entry) entry.count += 1;
+      else byProfessional.set(gap.professional.id, { professional: gap.professional, count: 1 });
+    }
+    return [...byProfessional.values()].sort((a, b) => b.count - a.count);
   }
 
   activePlans(): DevelopmentPlan[] {
     return this.state.plans.filter((p) => p.cycleId === this.state.activeCycleId);
+  }
+
+  /**
+   * Os planos APROVADOS do ciclo, restritos à mesma população do denominador.
+   *
+   * O cartão "PDIs do ciclo" dividia populações diferentes: o numerador
+   * contava planos de todo o recorte que a API entregou — inclusive pessoas
+   * desativadas e o próprio líder —, e o denominador contava só as pessoas
+   * ativas sob liderança. Bastava uma pessoa desativada com PDI aprovado para
+   * o cartão passar de 100%. Uma pessoa conta uma vez, mesmo com dois planos.
+   */
+  approvedPlansOf(population: readonly Professional[]): DevelopmentPlan[] {
+    const inScope = new Set(population.map((professional) => professional.id));
+    const seen = new Set<string>();
+    return this.activePlans().filter((plan) => {
+      if (plan.status !== "Approved") return false;
+      if (!inScope.has(plan.professionalId)) return false;
+      if (seen.has(plan.professionalId)) return false;
+      seen.add(plan.professionalId);
+      return true;
+    });
   }
 
   private get activePlanItems() {
@@ -128,10 +196,94 @@ export class DashboardPresenter {
     return this.activePlanItems.filter((i) => i.status === "Completed").length;
   }
 
-  get pathsInProgress(): number {
-    return this.state.learningPaths.filter((p) =>
-      p.progress.some((entry) => entry.status === "In Progress"),
-    ).length;
+  /**
+   * DIAS DESDE A ÚLTIMA 1:1, pessoa a pessoa. `null` é quem nunca teve uma —
+   * ausência, nunca zero: zero diria "conversamos hoje".
+   */
+  oneOnOneRecency(
+    population: readonly Professional[],
+    today: Date = new Date(),
+  ): readonly OneOnOneRecency[] {
+    return population.map((professional) => {
+      const last = this.lastSessionOf(professional.id);
+      return {
+        professional,
+        days: last ? DashboardPresenter.daysBetween(last.date, today) : null,
+      };
+    });
+  }
+
+  /** O maior intervalo do time — o número-síntese da recência de 1:1. */
+  longestSinceOneOnOne(population: readonly Professional[], today: Date = new Date()): number {
+    const days = this.oneOnOneRecency(population, today)
+      .map((entry) => entry.days)
+      .filter((value): value is number => value !== null);
+    return days.length > 0 ? Math.max(...days) : 0;
+  }
+
+  /**
+   * 1:1 DE RETORNO VENCIDA: a pessoa cuja ÚLTIMA sessão marcou um retorno em
+   * data já passada. Sessão posterior ao retorno apaga o vencimento — a
+   * conversa aconteceu.
+   *
+   * Não há limiar de dias aqui, e não invento um: a regra é "a data marcada
+   * já passou". O "8, não 14" da análise é a POPULAÇÃO medida no banco do
+   * dono (8 das 14 pessoas), não um prazo.
+   */
+  overdueFollowUps(
+    population: readonly Professional[],
+    today: Date = new Date(),
+  ): readonly OverdueFollowUp[] {
+    const overdue: OverdueFollowUp[] = [];
+    for (const professional of population) {
+      const last = this.lastSessionOf(professional.id);
+      const dueOn = last?.nextSession;
+      if (!dueOn) continue;
+      if (DashboardPresenter.daysBetween(dueOn, today) > 0) overdue.push({ professional, dueOn });
+    }
+    return overdue;
+  }
+
+  /**
+   * TRILHA ATRIBUÍDA E PARADA: a pessoa inscrita numa trilha sem nenhum item
+   * concluído. Não é "sem trilha" — é trilha que existe e não andou.
+   */
+  stalledPaths(population: readonly Professional[]): readonly StalledPath[] {
+    const stalled: StalledPath[] = [];
+    for (const professional of population) {
+      for (const path of this.state.learningPaths) {
+        if (!path.assignedTo.includes(professional.id)) continue;
+        const completed = path.progress.some(
+          (entry) => entry.professionalId === professional.id && entry.status === "Completed",
+        );
+        if (!completed) stalled.push({ professional, path });
+      }
+    }
+    return stalled;
+  }
+
+  private lastSessionOf(professionalId: string): MentoringSession | undefined {
+    return this.state.mentoringSessions
+      .filter((session) => session.menteeId === professionalId)
+      .reduce<MentoringSession | undefined>(
+        (latest, session) => (latest && latest.date >= session.date ? latest : session),
+        undefined,
+      );
+  }
+
+  /** Dias corridos entre um dia do calendário (AAAA-MM-DD) e hoje, no UTC do dia. */
+  private static daysBetween(isoDay: string, today: Date): number {
+    const day = Date.parse(`${isoDay.slice(0, 10)}T00:00:00.000Z`);
+    const reference = Date.UTC(
+      today.getUTCFullYear(),
+      today.getUTCMonth(),
+      today.getUTCDate(),
+      0,
+      0,
+      0,
+      0,
+    );
+    return Math.round((reference - day) / 86_400_000);
   }
 
   assessmentCoverage(population: readonly Professional[]): AssessmentCoverage {
@@ -146,38 +298,6 @@ export class DashboardPresenter {
       },
       { completed: 0, inReview: 0, draft: 0, notStarted: 0 },
     );
-  }
-
-  private largestBy<T>(items: readonly T[], scoreOf: (item: T) => number, limit: number): T[] {
-    if (limit <= 0) return [];
-    if (items.length <= limit) return [...items].sort((a, b) => scoreOf(b) - scoreOf(a));
-
-    const selected: T[] = [];
-    const scores: number[] = [];
-
-    for (const item of items) {
-      const score = scoreOf(item);
-      const weakestSelected = scores[limit - 1];
-      if (selected.length === limit && weakestSelected !== undefined && score <= weakestSelected)
-        continue;
-
-      let position = selected.length;
-      while (position > 0) {
-        const previous = scores[position - 1];
-        if (previous === undefined || previous >= score) break;
-        position -= 1;
-      }
-
-      selected.splice(position, 0, item);
-      scores.splice(position, 0, score);
-
-      if (selected.length > limit) {
-        selected.pop();
-        scores.pop();
-      }
-    }
-
-    return selected;
   }
 }
 
