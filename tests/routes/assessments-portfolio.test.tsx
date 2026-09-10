@@ -119,21 +119,28 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
     expect(screen.getByText(/curadoria do catálogo precisa ser concluída/)).toBeTruthy();
   });
 
-  it("mostra o tamanho do portfólio do ciclo separado da contagem de elegibilidade", async () => {
+  /**
+   * ESTADO VAZIO — a falta se diz UMA vez (dono, 2026-09-09, com captura:
+   * *"está atualmente confuso e visualmente ruim"*). O levantamento dos três
+   * estados mostrou o bloco vazio dizendo "você não selecionou nada" cinco
+   * vezes: o selo do tamanho, a barra em 0%, o selo `0/3`, a dica do mínimo e
+   * a frase do vazio. Sobra o estado vazio de duas linhas — e só ele.
+   */
+  it("no estado vazio, nenhum número repete a frase do vazio", async () => {
     renderPage();
-    await screen.findByText(/Portfólio do ciclo: 0 capacidade/);
+    await screen.findByLabelText("Adicionar capacidade ao portfólio");
 
-    expect(screen.getByText(/0\/3 capacidades qualificadas/)).toBeTruthy();
-    expect(screen.getByText(/Selecione pelo menos 3 capacidades/)).toBeTruthy();
+    expect(screen.queryByText(/Portfólio do ciclo: 0 capacidade/)).toBeNull();
+    expect(screen.queryByText(/0\/3/)).toBeNull();
+    expect(screen.queryByRole("progressbar")).toBeNull();
   });
 
-  /** ENT-09-016 — indicador visual do mínimo de 3, além do número no badge. */
-  it("mostra uma barra de progresso do portfólio em direção ao mínimo de 3", async () => {
+  it("o estado vazio diz as duas linhas da casa — assunto e regra do ciclo", async () => {
     renderPage();
-    await screen.findByText(/Portfólio do ciclo: 0 capacidade/);
+    await screen.findByLabelText("Adicionar capacidade ao portfólio");
 
-    const progress = screen.getByRole("progressbar");
-    expect(progress.getAttribute("aria-valuenow")).toBe("0");
+    expect(screen.getByText("Nenhuma capacidade no portfólio deste ciclo")).toBeTruthy();
+    expect(screen.getByText(/Selecione pelo menos 3 capacidades/)).toBeTruthy();
   });
 
   it("loading aparece antes da resposta, e error com Tentar novamente quando a rota falha", async () => {
@@ -226,5 +233,87 @@ describe("Avaliações — Portfólio de Capacidades do Ciclo", () => {
       ).length;
       expect(stateCallsAfter).toBeGreaterThan(stateCallsBefore);
     });
+  });
+
+  /**
+   * ESTADO PARCIAL — a confusão aqui é OUTRA (o levantamento dos três estados
+   * mostrou): dois selos de mesma forma, "2 selecionada(s) · mínimo 3" e
+   * "1/3 qualificadas", contra o MESMO denominador e com significados
+   * diferentes, mais a barra de 66% que pertencia só ao primeiro. Passa a
+   * haver UM número-síntese (o que conta para a progressão) e UM medidor, com
+   * uma vaga por capacidade e uma vaga tracejada por capacidade que falta
+   * selecionar — os dois "números" viram posições da mesma pista.
+   */
+  const renderComElegibilidade = (eligibility: AssessmentEligibility) => {
+    mockAppFetch(fetchMock, {
+      user: fixtureAssignedTechLeadUser,
+      state,
+      routes: [(href) => (href.includes("/eligibility") ? jsonResponse(eligibility) : undefined)],
+    });
+    return renderPage();
+  };
+
+  const parcial: AssessmentEligibility = {
+    ...eligibilityBase,
+    capabilities: [
+      { capabilityId: "cloud", confirmed: true, qualified: true },
+      { capabilityId: "security", confirmed: true, qualified: false },
+    ],
+    qualifiedConfirmedCount: 1,
+    eligible: false,
+  };
+
+  it("no estado parcial, o número-síntese da progressão é um só", async () => {
+    renderComElegibilidade(parcial);
+    await screen.findByLabelText("Adicionar capacidade ao portfólio");
+
+    expect(screen.queryByText(/Portfólio do ciclo: 2 capacidade/)).toBeNull();
+    expect(screen.getByText("1/3")).toBeTruthy();
+    expect(screen.getByText(/Faltam 2 capacidade/)).toBeTruthy();
+  });
+
+  it("no estado parcial, o medidor separa os estágios e mostra a vaga que falta", async () => {
+    renderComElegibilidade(parcial);
+    await screen.findByLabelText("Adicionar capacidade ao portfólio");
+
+    const medidor = screen.getByLabelText("1/3 capacidades qualificadas");
+    const vagas = medidor.querySelectorAll("[data-portfolio-slot]");
+    expect(Array.from(vagas).map((vaga) => vaga.getAttribute("data-portfolio-slot"))).toEqual([
+      "qualified",
+      "belowBar",
+      "unselected",
+    ]);
+  });
+
+  it("no estado parcial, a legenda conta cada estágio uma vez", async () => {
+    renderComElegibilidade(parcial);
+    await screen.findByLabelText("Adicionar capacidade ao portfólio");
+
+    expect(screen.getByText(/^1 qualificada/)).toBeTruthy();
+    expect(screen.getByText(/^1 abaixo da régua/)).toBeTruthy();
+    expect(screen.getByText(/^1 a selecionar/)).toBeTruthy();
+  });
+
+  /**
+   * ESTADO COMPLETO — a terceira confusão: com `eligible: true` o bloco não
+   * dizia NADA. O veredito existe no contrato (`eligible`) e nunca chegava à
+   * tela; o selo só trocava de variante, o que ninguém lê. E ele vem com a
+   * ressalva da régua de progressão: elegibilidade não promove sozinha.
+   */
+  it("no estado completo, o bloco diz o veredito de elegibilidade", async () => {
+    renderComElegibilidade({
+      ...eligibilityBase,
+      policy: { careerLevelId: "arquiteto-de-solucoes-iii", minimumQualifiedCapabilities: 2 },
+      capabilities: [
+        { capabilityId: "cloud", confirmed: true, qualified: true },
+        { capabilityId: "security", confirmed: true, qualified: true },
+      ],
+      qualifiedConfirmedCount: 2,
+      eligible: true,
+    });
+    await screen.findByLabelText("Adicionar capacidade ao portfólio");
+
+    expect(screen.getByText(/Elegível para Sênior/)).toBeTruthy();
+    expect(screen.getByText(/decisão de quem gerencia/)).toBeTruthy();
   });
 });

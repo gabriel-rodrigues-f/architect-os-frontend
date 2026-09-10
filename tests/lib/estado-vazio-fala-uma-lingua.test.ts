@@ -143,6 +143,7 @@ const CONTEXTOS: readonly MessageKey[] = [
   "empty.context.inYourScope",
   "empty.context.selected",
   "empty.context.completedToCompare",
+  "empty.context.inThePortfolio",
 ];
 
 describe("o vazio que não é de cadastro: Nenhum(a) {assunto} {contexto}", () => {
