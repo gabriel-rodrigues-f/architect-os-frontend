@@ -90,8 +90,22 @@ describe("CompetencyMatrixViewModel", () => {
   describe("renameCapability", () => {
     it("envia só o nome cortado — nunca `short` (backend regenera a sigla)", () => {
       const { vm, service } = makeVm();
-      vm.renameCapability("cloud", "  Nuvem  ");
-      expect(service.updateCapability).toHaveBeenCalledWith("cloud", { name: "Nuvem" });
+      const aoConfirmar = vi.fn();
+      vm.renameCapability("cloud", "  Nuvem  ", aoConfirmar);
+      expect(service.updateCapability).toHaveBeenCalledWith(
+        "cloud",
+        { name: "Nuvem" },
+        aoConfirmar,
+      );
+    });
+  });
+
+  describe("hasPendingRename — a tranca do segundo envio, derivada do estado", () => {
+    it("não há o que salvar quando o nome cortado é o que a capacidade já tem", () => {
+      const { vm } = makeVm();
+      expect(vm.hasPendingRename({ name: "Nuvem" }, "  Nuvem  ")).toBe(false);
+      expect(vm.hasPendingRename({ name: "Nuvem" }, "   ")).toBe(false);
+      expect(vm.hasPendingRename({ name: "Nuvem" }, "Nuvem Pública")).toBe(true);
     });
   });
 

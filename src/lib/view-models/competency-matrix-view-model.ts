@@ -65,8 +65,25 @@ export class CompetencyMatrixViewModel {
     return this.service.foundCapability(foundation);
   }
 
-  renameCapability(id: string, name: string): void {
-    this.service.updateCapability(id, { name: name.trim() });
+  /**
+   * A EDIÇÃO PEDIDA — a mesma régua do `removeItem` do view-model do PDI:
+   * otimista, `onConfirmed` roda quando o SERVIÇO confirma, e é lá que mora o
+   * aviso de sucesso, nunca no clique.
+   */
+  renameCapability(id: string, name: string, onConfirmed?: (updated: Capability) => void): void {
+    this.service.updateCapability(id, { name: name.trim() }, onConfirmed);
+  }
+
+  /**
+   * Ainda há o que salvar? A gravação otimista já deixou a capacidade com o
+   * nome enviado antes da resposta, então isto vira `false` no instante do
+   * clique e volta a `true` se o serviço recusar e o rollback devolver o nome
+   * antigo — é a tranca do segundo envio, derivada do estado, sem um `saving`
+   * local que ficaria preso na recusa.
+   */
+  hasPendingRename(capability: Pick<Capability, "name">, name: string): boolean {
+    const trimmed = name.trim();
+    return trimmed.length > 0 && trimmed !== capability.name;
   }
 
   removeCapability(id: string): Promise<{ archived: boolean; competenciesRemoved: number }> {

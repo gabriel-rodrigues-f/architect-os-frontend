@@ -202,7 +202,12 @@ export interface Api extends AppState {
   removeCompetencies: (competencyIds: string[]) => Promise<CompetencyRemovalSummary>;
 
   foundCapability: (foundation: CapabilityFoundationPayload) => Promise<Capability>;
-  updateCapability: (id: string, patch: Partial<Omit<Capability, "id" | "curation">>) => void;
+  /** `onConfirmed` roda na resposta 2xx — o aviso da mutação otimista mora lá, nunca no clique. */
+  updateCapability: (
+    id: string,
+    patch: Partial<Omit<Capability, "id" | "curation">>,
+    onConfirmed?: (updated: Capability) => void,
+  ) => void;
 
   removeCapability: (id: string) => Promise<{ archived: boolean; competenciesRemoved: number }>;
   addCycle: (c: DevelopmentCycle, onConfirmed?: (created: DevelopmentCycle) => void) => void;
@@ -619,7 +624,7 @@ export function buildApi(
         )
         .then(refreshCurationCounts),
 
-    updateCapability: (id, patch) => {
+    updateCapability: (id, patch, onConfirmed) => {
       runner.optimistic(
         (s) => ({
           ...s,
@@ -634,6 +639,7 @@ export function buildApi(
             .map((c) => (c.id === id ? updated : c))
             .sort(defaultNameFormatter.byName),
         }),
+        onConfirmed,
       );
     },
 
