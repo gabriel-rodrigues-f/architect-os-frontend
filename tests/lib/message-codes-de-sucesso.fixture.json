@@ -202,11 +202,6 @@
       "arquivo": "src/modules/mentoring/infrastructure/controllers/mentoring.controller.ts",
       "resposta": "created"
     },
-    "mentoring.recordFromScript.success": {
-      "rota": "POST /mentoring-sessions/from-session-script",
-      "arquivo": "src/modules/mentoring/infrastructure/controllers/mentoring.controller.ts",
-      "resposta": "created"
-    },
     "mentoring.scheduleFollowUp.success": {
       "rota": "PATCH /mentoring-sessions/:id",
       "arquivo": "src/modules/mentoring/infrastructure/controllers/mentoring.controller.ts",

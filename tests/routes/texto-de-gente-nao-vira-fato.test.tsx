@@ -28,7 +28,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
   };
 });
 
-import { Route as MentoringRoute } from "@/routes/mentoring";
+import { Route as PlansRoute } from "@/routes/development-plans";
 import { fixtureAssignedManagerUser } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
@@ -44,8 +44,22 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  * não declarava `written`, e o zod sem `.strict()` DESCARTA em silêncio o que
  * não está declarado. Nada quebrava — sumia conteúdo. E sumia justamente no
  * cenário que o ADR-0087 existe para cobrir: com o provedor no chão, o painel
- * determinístico é tudo o que a pessoa tem, e ele mostrava só a data da última
- * 1:1, sem o tema e sem as decisões — sem o "de onde paramos".
+ * determinístico é tudo o que a pessoa tem.
+ *
+ * MUDOU DE TELA em 2026-09-09, e a mudança precisa ser lida com cuidado. Isto
+ * media a Preparação do 1:1, que era o único assistente a PREENCHER `written`
+ * — e ela saiu do produto com a IA da tela de Mentoria e 1:1. O arquivo passou
+ * para o roteiro de PDI, que desenha pelo MESMO `PersonAdviceBody` e lê pelo
+ * MESMO `personAdvice` do `api-schemas.ts`: é o schema e o desenho que estas
+ * afirmações medem, e os dois são compartilhados.
+ *
+ * O limite, escrito: hoje NENHUM assistente do backend preenche `written` (a
+ * última travessia de texto de pessoa saiu junto — ver
+ * `backend/tests/architecture/texto-de-pessoa-nao-entra-nos-fatos.test.ts`).
+ * O corpo abaixo é, portanto, o de um servidor que VOLTARÁ a preencher o
+ * campo, e é assim que ele deve ser lido: a garantia da TELA fica medida e
+ * pronta para o dia em que a travessia voltar, em vez de sumir junto com a
+ * primeira que usou o canal.
  *
  * Por isso o teste entra pelo FIO e não pelo componente: ele responde a
  * chamada de verdade e mede o que aparece na tela. Medido apagando `written`
@@ -65,7 +79,7 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
  */
 const fetchMock = vi.fn();
 
-const MentoringPage = MentoringRoute.options.component as () => ReactNode;
+const PlansPage = PlansRoute.options.component as () => ReactNode;
 
 /** Uma tag digitada no campo de tema, como quem tenta injetar HTML na tela. */
 const TEMA_FORJADO =
@@ -73,19 +87,19 @@ const TEMA_FORJADO =
 
 const NOTAS = "Fechar o item de PDI mais antigo até a próxima conversa.";
 
-const FATO = "A última 1:1 aconteceu em 2026-06-01.";
+const FATO = "Distância 2 em Domain Modeling.";
 
 const ROTULO_DO_TEMA = "Tema da última 1:1, escrito por quem conduziu";
 
 const ROTULO_DAS_NOTAS = "Notas da última 1:1, escritas por quem conduziu";
 
 /**
- * O corpo da preparação de 1:1 COM O PROVEDOR NO CHÃO: `narration` nula e o
- * aviso no lugar dela. É o cenário do ADR-0087, e o que sobra na tela é o
- * determinístico — os fatos apurados e o texto de quem conduziu a conversa.
+ * O corpo do roteiro de PDI COM O PROVEDOR NO CHÃO: `narration` nula e o aviso
+ * no lugar dela. É o cenário do ADR-0087, e o que sobra na tela é o
+ * determinístico — os fatos apurados e o texto que uma pessoa digitou.
  */
-const preparacao = {
-  subject: "preparação do 1:1 com Ana Martins",
+const conselho = {
+  subject: "roteiro da conversa de construção do PDI desta pessoa",
   suggestion: true,
   notice:
     "Isto é uma sugestão gerada por inteligência artificial a partir do que o sistema calculou. Nada foi gravado: quem decide é você.",
@@ -98,20 +112,20 @@ const preparacao = {
   narration: null as string | null,
   narrationUnavailable: "A sugestão em linguagem natural está indisponível no momento.",
   profile: "moderate",
-  scriptProvenance: "selo-opaco",
+  outline: ["Distâncias a discutir", "Prioridade sugerida"],
 };
 
-const rotaDaPreparacao =
+const rotaDoRoteiro =
   (corpo: unknown): FetchRoute =>
   (href) =>
-    href.includes("one-on-one-preparation") ? jsonResponse(corpo) : undefined;
+    href.includes("session-script") ? jsonResponse(corpo) : undefined;
 
-/** Clica em "Preparar o 1:1" e espera a resposta chegar à tela. */
-async function preparaA1x1(corpo: unknown): Promise<ReturnType<typeof userEvent.setup>> {
-  mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, routes: [rotaDaPreparacao(corpo)] });
-  renderWithApp(<MentoringPage />);
+/** Clica em "Gerar roteiro de PDI" e espera a resposta chegar à tela. */
+async function geraORoteiro(corpo: unknown): Promise<ReturnType<typeof userEvent.setup>> {
+  mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, routes: [rotaDoRoteiro(corpo)] });
+  renderWithApp(<PlansPage />);
   const usuario = userEvent.setup();
-  await usuario.click(await screen.findByRole("button", { name: /Preparar o 1:1/ }));
+  await usuario.click(await screen.findByRole("button", { name: /Gerar roteiro de PDI/ }));
   await screen.findByText(FATO);
   return usuario;
 }
@@ -137,7 +151,7 @@ afterEach(() => {
 
 describe("o texto que uma pessoa escreveu, ao lado dos fatos e nunca dentro deles", () => {
   it("com o provedor no chão, o painel mostra os fatos E o que quem conduziu escreveu", async () => {
-    await preparaA1x1(preparacao);
+    await geraORoteiro(conselho);
 
     expect(screen.getByText(/está indisponível no momento/)).toBeTruthy();
     expect(screen.getByText(FATO)).toBeTruthy();
@@ -149,7 +163,7 @@ describe("o texto que uma pessoa escreveu, ao lado dos fatos e nunca dentro dele
   });
 
   it("o que o sistema calculou e o que alguém digitou ficam em blocos diferentes", async () => {
-    await preparaA1x1(preparacao);
+    await geraORoteiro(conselho);
 
     const fatos = blocoDe("O que o sistema calculou");
     const escrito = blocoDe("O que uma pessoa escreveu");
@@ -170,7 +184,7 @@ describe("o texto que uma pessoa escreveu, ao lado dos fatos e nunca dentro dele
   });
 
   it("uma tag digitada no formulário chega como TEXTO, não como elemento", async () => {
-    await preparaA1x1(preparacao);
+    await geraORoteiro(conselho);
 
     // O React escapa o filho de JSX: a marca existe como letra na tela…
     expect(screen.getByText(TEMA_FORJADO).textContent).toContain("<script");
@@ -182,7 +196,7 @@ describe("o texto que uma pessoa escreveu, ao lado dos fatos e nunca dentro dele
   });
 
   it("copiar leva o texto de gente junto, marcado como citação e não como fato", async () => {
-    const usuario = await preparaA1x1(preparacao);
+    const usuario = await geraORoteiro(conselho);
 
     await usuario.click(screen.getByRole("button", { name: "Copiar" }));
 
@@ -199,7 +213,7 @@ describe("o texto que uma pessoa escreveu, ao lado dos fatos e nunca dentro dele
 
 describe("sem texto de gente, a tela desenha como antes", () => {
   it("o assistente que não preenche o campo não ganha título órfão", async () => {
-    await preparaA1x1({ ...preparacao, written: [] });
+    await geraORoteiro({ ...conselho, written: [] });
 
     expect(screen.getByText(FATO)).toBeTruthy();
     expect(screen.queryByText("O que uma pessoa escreveu")).toBeNull();
@@ -211,8 +225,8 @@ describe("sem texto de gente, a tela desenha como antes", () => {
    * por "o assistente parou de funcionar" durante a subida.
    */
   it("resposta sem o campo continua desenhando o que o sistema calculou", async () => {
-    const { written: _written, ...semOCampo } = preparacao;
-    await preparaA1x1(semOCampo);
+    const { written: _written, ...semOCampo } = conselho;
+    await geraORoteiro(semOCampo);
 
     expect(screen.getByText(FATO)).toBeTruthy();
     expect(screen.getByText(/quem decide é você/)).toBeTruthy();

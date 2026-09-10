@@ -283,11 +283,12 @@ export function AiSuggestionFrame({ children }: { children: ReactNode }) {
 }
 
 /**
- * `narration` é o desenho da narração quando o assistente tem um próprio — a
- * preparação do 1:1 a desenha por seção (liturgia → resumo → SWOT). Sem ele,
- * o texto de IA é desenhado como em todo assistente. O resto do corpo (fatos,
- * texto de gente, ausências, aviso, copiar) é o mesmo para todos, e é por
- * isso que a variação é um parâmetro e não um segundo corpo.
+ * `narration` é o desenho da narração quando o assistente tem um próprio. Ele
+ * nasceu para a preparação do 1:1, que desenhava por seção (liturgia → resumo
+ * → SWOT) e saiu do produto em 2026-09-09; hoje NENHUM assistente o usa, e o
+ * parâmetro fica por ser o ponto de variação declarado — o corpo comum
+ * (fatos, texto de gente, ausências, aviso, copiar) é o mesmo para todos, e
+ * é por isso que a variação é um parâmetro e não um segundo corpo.
  */
 export function PersonAdviceBody({
   advice,
@@ -553,9 +554,13 @@ export function PersonAdviceSection<T extends PersonAdvice & { outline?: string[
  * O assistente de uma pessoa COM PERFIL DE GERAÇÃO (item 16 do dono): o
  * seletor Empírico | Moderado | Metodológico vem ANTES de gerar, Moderado por
  * padrão, e o perfil escolhido viaja no pedido só quando alguém clica. Duas
- * telas precisam exatamente disto — a preparação do 1:1 (Mentoria) e o
- * roteiro de PDI (PDI) —, e é a regra de reuso que o tira de dentro de cada
- * uma. `narration` é a única coisa que muda entre elas além do que se pede.
+ * telas precisavam exatamente disto — a preparação do 1:1 (Mentoria) e o
+ * roteiro de PDI (PDI) —, e foi a regra de reuso que o tirou de dentro de
+ * cada uma. A primeira saiu do produto em 2026-09-09 e sobrou o roteiro de
+ * PDI; o componente fica onde está porque o seletor de perfil, os quatro
+ * estados e o corpo comum não são desenho de uma tela só, e voltar a
+ * embutí-lo em `SessionScriptAssistant` desfaria a extração para depois
+ * refazê-la.
  */
 export function ProfiledAdviceSection<T extends PersonAdvice & { outline?: string[] }>({
   title,
