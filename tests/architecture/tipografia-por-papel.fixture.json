@@ -48,7 +48,7 @@
   "src/routes/cycles.tsx": 12,
   "src/routes/development-plans.tsx": 51,
   "src/routes/gap-analysis.tsx": 6,
-  "src/routes/index.tsx": 33,
+  "src/routes/index.tsx": 32,
   "src/routes/learning-paths.tsx": 23,
   "src/routes/professionals.$professionalId.evolution.tsx": 21,
   "src/routes/professionals.$professionalId.index.tsx": 22,

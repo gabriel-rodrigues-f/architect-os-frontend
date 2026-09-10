@@ -112,18 +112,25 @@ describe("Painel Executivo — um bloco, uma ideia, um número-síntese", () => 
     },
   );
 
-  it("a cobertura da avaliação é um percentual; as distâncias, uma contagem crítica; as ações, a fila", async () => {
+  it("a cobertura da avaliação é uma FRAÇÃO com tom de faixa; as distâncias, uma contagem; as ações, a fila", async () => {
     renderAsLeader(fixtureAssignedManagerUser);
     await screen.findByText("Painel Executivo");
 
-    // Fixture: Ana e Bruno, as duas pessoas do time, têm avaliação concluída no ciclo.
+    /*
+     * Onda 1, itens 1 e 3: o número grande da cobertura era o percentual, sem
+     * tom nenhum — 20% e 95% saíam na mesma cor. Agora o número grande é a
+     * FRAÇÃO (com denominador 10 o indicador só anda de 10 em 10 p.p.), o
+     * percentual desceu para a legenda, e o tom vem da régua de cobertura.
+     * Fixture: Ana e Bruno, as duas pessoas do time, com avaliação concluída.
+     */
     const cobertura = blocoDe("Avaliação do Ciclo").querySelector("[data-key-figure]")!;
-    expect(within(cobertura as HTMLElement).getByText("100%")).toBeTruthy();
-    expect(within(cobertura as HTMLElement).getByText(/2 de 2 concluídas/)).toBeTruthy();
+    expect(within(cobertura as HTMLElement).getByText("2 de 2")).toBeTruthy();
+    expect(within(cobertura as HTMLElement).getByText(/100%/)).toBeTruthy();
+    expect(cobertura.getAttribute("data-tone")).toBe("good");
 
-    // O tom do número é decidido pela severidade: crítico quando há distância crítica, bom quando não há.
+    // O tom do número é decidido pela faixa de concentração, não mais pelo binário.
     const distancias = blocoDe("Distâncias por severidade").querySelector("[data-key-figure]")!;
-    expect(["critical", "good"]).toContain(distancias.getAttribute("data-tone"));
+    expect(["critical", "attention", "good"]).toContain(distancias.getAttribute("data-tone"));
 
     // O PDI da Ana em rascunho com item — uma ação na fila.
     const acoes = blocoDe("Ações da Liderança");

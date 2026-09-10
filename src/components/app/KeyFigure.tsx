@@ -3,6 +3,7 @@ import { useId, type ReactNode } from "react";
 
 import { useI18n } from "@/lib/i18n";
 import { type KeyFigureFormat, KeyFigureFormatter } from "@/lib/key-figure-format";
+import type { BandTone } from "@/lib/scoring-bands";
 import { cn } from "@/lib/utils";
 
 import { SectionHeading } from "./SectionHeading";
@@ -21,15 +22,41 @@ import { SectionHeading } from "./SectionHeading";
  */
 export type StatTone = "neutral" | "attention" | "critical" | "good";
 
+/** A faixa da régua diz o quanto; o tom diz como pintar. */
+const TONE_BY_BAND: Record<BandTone, StatTone> = {
+  ok: "good",
+  low: "attention",
+  high: "attention",
+  critical: "critical",
+};
+
 export class StatTones {
   /** Fila: vazia é bom; cheia pede atenção. */
   static byPending(count: number): StatTone {
     return count > 0 ? "attention" : "good";
   }
 
-  /** Severidade: qualquer ocorrência já é crítica. */
+  /**
+   * Severidade binária: qualquer ocorrência já é crítica.
+   *
+   * SAIU DO PAINEL EXECUTIVO na onda 1 (`painel-executivo-analise-2026-09-09.md`,
+   * A.3-2): lá o cartão de distâncias nunca deixava de estar vermelho, e uma
+   * cor que nunca muda deixou de ser informação — passou a ler faixa por
+   * `CriticalConcentrationRuler`. Continua servindo ao Mapa de Capacidades,
+   * onde a leitura de risco de concentração ainda tem duas definições em
+   * disputa no produto e não é desta fatia resolvê-las.
+   */
   static bySeverity(count: number): StatTone {
     return count > 0 ? "critical" : "good";
+  }
+
+  /**
+   * O tom de uma leitura de RÉGUA (`CoverageRuler`, `CriticalConcentrationRuler`,
+   * `GapSeverityRuler`): quem sabe ONDE o número cai é a régua; aqui só se
+   * traduz faixa em cor.
+   */
+  static ofBand(tone: BandTone): StatTone {
+    return TONE_BY_BAND[tone];
   }
 }
 

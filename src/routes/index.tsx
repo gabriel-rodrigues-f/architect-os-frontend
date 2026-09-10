@@ -33,10 +33,12 @@ import {
   type LeadPendingQueues,
   PersonalDashboardPresenter,
 } from "@/lib/presenters";
+import { CoverageRuler, CriticalConcentrationRuler } from "@/lib/scoring-bands";
+import { defaultDateFormatter } from "@/lib/text";
 import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { Registration } from "@/lib/registration";
-import type { DevelopmentPlan } from "@/lib/domain";
+import type { DevelopmentPlan, Professional } from "@/lib/domain";
 import { useLabels } from "@/lib/labels";
 import { usePageHelp } from "@/lib/page-help";
 import { useGapSeverityRuler, useSelectors, useStore } from "@/lib/store";
@@ -499,7 +501,7 @@ function MemberHome() {
  * que dependem de uma decisão da liderança. O detalhe fica abaixo, mais leve.
  */
 function LeadHome() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const help = usePageHelp("dashLead");
   const presenter = useDashboardPresenter();
   const severity = useGapSeverityRuler();
@@ -528,7 +530,23 @@ function LeadHome() {
   const gapsBySeverity = presenter.gapsBySeverity(people, severity);
   const openGaps = gapsBySeverity.low + gapsBySeverity.high + gapsBySeverity.critical;
   const criticalGaps = presenter.criticalGapCount(people);
-  const approvedPlans = presenter.activePlans().filter((plan) => plan.status === "Approved");
+  /*
+   * O numerador do PDI vinha de `activePlans()` — TODO o recorte que a API
+   * entregou, com pessoas desativadas e o próprio líder dentro —, enquanto o
+   * denominador contava só as pessoas ativas sob liderança. Bastava uma
+   * pessoa desativada com PDI aprovado para o cartão passar de 100%
+   * (`painel-executivo-analise-2026-09-09.md`, A.3-4).
+   */
+  const approvedPlans = presenter.approvedPlansOf(people);
+  /*
+   * A cobertura é o único KPI percentual da tela e saía SEM TOM: o padrão
+   * `neutral` tem estilo vazio, então 20% e 95% apareciam na mesma cor. Os
+   * cortes da régua vêm da leitura escrita na análise (D.2, KPI 1).
+   */
+  const coverageRatio = KeyFigureFormatter.ratio(coverage.completed, people.length);
+  const coverageBand = CoverageRuler.read(coverageRatio);
+  const concentration = CriticalConcentrationRuler.read(criticalGaps, openGaps);
+  const criticalByPerson = presenter.criticalGapsByProfessional(people);
 
   return (
     <>
@@ -545,11 +563,19 @@ function LeadHome() {
           <KeyFigureCard
             className="h-full"
             label={t("dash.cycleAssessment.title")}
-            value={KeyFigureFormatter.ratio(coverage.completed, people.length)}
-            format="percent"
-            caption={t("dash.coverage.figureCaption", {
+            /*
+             * A FRAÇÃO é o número grande, o percentual é a legenda: com
+             * denominador 10, o indicador só assume múltiplos de 10 p.p., e
+             * "80%" esconde que o passo mínimo é uma pessoa inteira.
+             */
+            value={t("dash.coverage.figureValue", {
               completed: coverage.completed,
               total: people.length,
+            })}
+            tone={StatTones.ofBand(coverageBand.tone)}
+            caption={t("dash.coverage.figureCaption", {
+              percent: new KeyFigureFormatter(locale).format(coverageRatio, "percent"),
+              band: t(coverageBand.labelKey),
             })}
             help={<DashboardCardHelp card="cycleAssessment" />}
           >
@@ -595,8 +621,12 @@ function LeadHome() {
             className="h-full"
             label={t("dash.severity.title")}
             value={criticalGaps}
-            tone={StatTones.bySeverity(criticalGaps)}
-            caption={t("dash.severity.caption", { critical: criticalGaps, open: openGaps })}
+            tone={StatTones.ofBand(concentration.tone)}
+            caption={t("dash.severity.caption", {
+              critical: criticalGaps,
+              open: openGaps,
+              band: t(concentration.labelKey),
+            })}
             help={<DashboardCardHelp card="severity" />}
           >
             <GapSeverityChart
@@ -608,6 +638,20 @@ function LeadHome() {
                 severity: t(severity.messageKey[tone]),
                 count: gapsBySeverity[tone],
                 color,
+              }))}
+            />
+            {/*
+             * O agregado apaga a única informação que muda decisão: no banco
+             * do dono, 100% das 21 distâncias críticas estavam em DUAS
+             * pessoas. Nesta escala, "onde agir" resolve em nomes.
+             */}
+            <PeopleSignalList
+              className="mt-6"
+              title={t("dash.severity.people.title")}
+              emptyLabel={t("dash.severity.people.none")}
+              entries={criticalByPerson.map(({ professional, count }) => ({
+                professional,
+                detail: t("dash.severity.people.detail", { n: count }),
               }))}
             />
             <Link to="/gap-analysis" className="mt-3 inline-block text-sm text-primary underline">
@@ -658,7 +702,151 @@ function LeadHome() {
           </KeyFigureCard>
         </RevealBlock>
       </div>
+
+      <RevealBlock order={4} className="mt-6">
+        <FollowUpSection people={people} presenter={presenter} />
+      </RevealBlock>
     </>
+  );
+}
+
+/**
+ * ACOMPANHAMENTO DO TIME — os três sinais que o Painel já recebia de graça e
+ * não usava: `mentoringSessions` e `learningPaths` estão entre os nove
+ * conjuntos que a tela carrega desde sempre.
+ *
+ * Os três terminam em NOME, não em média: dias desde a última 1:1, 1:1 de
+ * retorno vencida e trilha atribuída que não andou. Nenhum deles tem faixa de
+ * cor — não há régua assinada para eles, e cor sem régua é a mesma falha que
+ * esta onda está fechando no cartão de cobertura.
+ */
+function FollowUpSection({
+  people,
+  presenter,
+}: {
+  people: readonly Professional[];
+  presenter: DashboardPresenter;
+}) {
+  const { t, locale } = useI18n();
+
+  const recency = [...presenter.oneOnOneRecency(people)].sort(
+    (esquerda, direita) =>
+      (direita.days ?? Number.POSITIVE_INFINITY) - (esquerda.days ?? Number.POSITIVE_INFINITY),
+  );
+  const overdue = presenter.overdueFollowUps(people);
+  const stalled = presenter.stalledPaths(people);
+
+  return (
+    <SectionCard title={t("dash.followUp.title")} description={t("dash.followUp.subtitle")}>
+      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        <PeopleSignalList
+          title={t("dash.followUp.recency.title")}
+          emptyLabel={t("dash.followUp.recency.none")}
+          entries={recency.map(({ professional, days }) => ({
+            professional,
+            detail:
+              days === null
+                ? t("dash.followUp.recency.never")
+                : t("dash.followUp.recency.detail", { n: days }),
+          }))}
+        />
+        <PeopleSignalList
+          title={t("dash.followUp.overdue.title")}
+          emptyLabel={t("dash.followUp.overdue.none")}
+          entries={overdue.map(({ professional, dueOn }) => ({
+            professional,
+            detail: t("dash.followUp.overdue.detail", {
+              data: defaultDateFormatter.formatDate(dueOn, locale) ?? dueOn,
+            }),
+          }))}
+        />
+        <PeopleSignalList
+          title={t("dash.followUp.stalled.title")}
+          emptyLabel={t("dash.followUp.stalled.none")}
+          entries={stalled.map(({ professional, path }) => ({
+            professional,
+            detail: t("dash.followUp.stalled.detail", { trilha: path.name }),
+          }))}
+        />
+      </div>
+    </SectionCard>
+  );
+}
+
+/**
+ * O NOME DE UMA PESSOA, levando ao lugar onde se age sobre ela.
+ *
+ * Cinco listas do Painel escrevem o mesmo link — as duas filas da liderança,
+ * a lista de distância crítica e os três sinais de acompanhamento —, então é
+ * um componente só (regra de reuso). Sem `to`, o destino é a FICHA: é o que
+ * a lista de distância crítica precisa, porque o nome sem caminho para a
+ * ficha continua sendo agregado.
+ */
+const PERSON_LINK_CLASS = "truncate text-body hover:underline";
+
+function PersonLink({
+  professional,
+  to,
+}: {
+  professional: { id: string; name: string };
+  to?: "/assessments" | "/development-plans";
+}) {
+  if (to) {
+    return (
+      <Link to={to} search={{ professionalId: professional.id }} className={PERSON_LINK_CLASS}>
+        {professional.name}
+      </Link>
+    );
+  }
+  return (
+    <Link
+      to="/professionals/$professionalId"
+      params={{ professionalId: professional.id }}
+      className={PERSON_LINK_CLASS}
+    >
+      {professional.name}
+    </Link>
+  );
+}
+
+/**
+ * UMA LISTA NOMINAL: o título, as pessoas, o motivo de cada uma e o caminho
+ * para a ficha. Quatro blocos do Painel têm exatamente esta forma (distância
+ * crítica e os três sinais de acompanhamento), então é um componente só —
+ * regra de reuso: o que serve a dois lugares vira componente.
+ */
+function PeopleSignalList({
+  title,
+  entries,
+  emptyLabel,
+  className,
+}: {
+  title: string;
+  entries: readonly { professional: Professional; detail: string }[];
+  emptyLabel: string;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <SectionHeading as="p" muted>
+        {title}
+      </SectionHeading>
+      {entries.length === 0 ? (
+        <p className="mt-2 text-body text-muted-foreground">{emptyLabel}</p>
+      ) : (
+        <ul className="mt-2 space-y-2">
+          {entries.map(({ professional, detail }) => (
+            <li
+              key={professional.id}
+              className="surface-interactive -mx-2 flex items-center justify-between gap-3 rounded-md px-2 py-1"
+            >
+              <PersonLink professional={professional} />
+              <span className="shrink-0 text-meta text-muted-foreground">{detail}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -721,13 +909,7 @@ function LeadQueueColumn({
       <ul className="mt-2 space-y-2">
         {people.map(({ professional }) => (
           <li key={professional.id} className="surface-interactive -mx-2 rounded-md px-2 py-1">
-            <Link
-              to={to}
-              search={{ professionalId: professional.id }}
-              className="text-sm hover:underline"
-            >
-              {professional.name}
-            </Link>
+            <PersonLink professional={professional} to={to} />
           </li>
         ))}
         {people.length === 0 && (
