@@ -28,12 +28,13 @@ import { Route as DashboardRoute } from "@/routes/index";
 import type { AppState, SessionUser } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
 import {
-  fixtureAdminUser,
+  fixtureSupportUser,
   fixtureAssignedManagerUser,
   fixtureAssignedTechLeadUser,
   fixtureMemberUser,
   fixtureState,
 } from "../helpers/fixtures";
+import { executiveBriefingRoute } from "../helpers/executive-briefing";
 import {
   type FetchRoute,
   jsonResponse,
@@ -56,6 +57,12 @@ import {
  * de operação, e nele o ciclo é um CARTÃO ("Ciclo vigente"): sem ciclo ativo
  * o cartão diz "Nenhum ciclo ativo" e o atalho de Ciclos leva a /cycles. A
  * mensagem + botão "Cadastrar Ciclo" segue sendo a resposta da liderança.
+ *
+ * ONDA 3 — quem DESCOBRE a ausência mudou de lado. A liderança não soma mais
+ * nada no navegador: ela pede a leitura do ciclo e o servidor responde "não
+ * existe". A tela continua respondendo a mesma coisa — o bloco de vazio com o
+ * botão —, e é isso que estes casos afirmam. A Visão do Sistema (agora do
+ * SUPORTE, e com endereço próprio) continua lendo `/operations/overview`.
  */
 const fetchMock = vi.fn();
 
@@ -78,10 +85,23 @@ const panoramaRoute =
         )
       : undefined;
 
+/**
+ * A leitura executiva quando NÃO HÁ CICLO: o servidor responde a recusa de
+ * inexistente, byte a byte igual à de alcance (regra 18 do dono) — e a tela
+ * NÃO a lê como ausência. Quem responde "não há ciclo" é o catálogo de ciclos
+ * do contexto, e é por isso que o estado vazio aparece antes de qualquer
+ * leitura chegar.
+ */
+const semCicloRoute: FetchRoute = (href) =>
+  href.includes(apiPath("/dashboard/executive"))
+    ? jsonResponse({ code: "NOT_FOUND", message: "Ciclo de desenvolvimento não encontrado." }, 404)
+    : undefined;
+
 function prepararPainel(user: SessionUser, state: AppState) {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
-  mockAppFetch(fetchMock, { user, state, routes: [panoramaRoute(state)] });
+  const leitura = state.cycles.length === 0 ? semCicloRoute : executiveBriefingRoute;
+  mockAppFetch(fetchMock, { user, state, routes: [leitura, panoramaRoute(state)] });
   renderWithApp(<DashboardPage />);
 }
 
@@ -107,7 +127,7 @@ describe("Painel sem nenhum ciclo cadastrado", () => {
   });
 
   it("D1 (dono, 2026-09-05): o admin sem ciclo vê 'Nenhum ciclo ativo' no cartão de ciclo e o atalho de Ciclos leva a /cycles", async () => {
-    prepararPainel(fixtureAdminUser, estadoSemCiclo);
+    prepararPainel(fixtureSupportUser, estadoSemCiclo);
 
     expect(await screen.findByText("Visão do Sistema")).toBeTruthy();
     expect(await screen.findByText("Nenhum ciclo ativo")).toBeTruthy();
@@ -119,7 +139,7 @@ describe("Painel sem nenhum ciclo cadastrado", () => {
   });
 
   it("D1 (dono, 2026-09-05): o admin sem ciclo não vê a matriz antiga nem 'PDIs ativos' — só as contagens de operação", async () => {
-    prepararPainel(fixtureAdminUser, estadoSemCiclo);
+    prepararPainel(fixtureSupportUser, estadoSemCiclo);
 
     await screen.findByText("Nenhum ciclo ativo");
     expect(screen.queryByText("PDIs ativos")).toBeNull();
@@ -128,7 +148,7 @@ describe("Painel sem nenhum ciclo cadastrado", () => {
   });
 
   it("com ciclo cadastrado, o Painel de operação do admin nomeia o ciclo — sem a mensagem", async () => {
-    prepararPainel(fixtureAdminUser, fixtureState);
+    prepararPainel(fixtureSupportUser, fixtureState);
 
     expect(await screen.findByText("Visão do Sistema")).toBeTruthy();
     expect(await screen.findByText("2026 H2")).toBeTruthy();
@@ -140,7 +160,7 @@ describe("Painel sem nenhum ciclo cadastrado", () => {
   it("com ciclo cadastrado, a liderança continua vendo as pendências — sem a mensagem", async () => {
     prepararPainel(fixtureAssignedManagerUser, fixtureState);
 
-    expect(await screen.findByText("Ações da Liderança")).toBeTruthy();
+    expect(await screen.findByText("Painel Executivo")).toBeTruthy();
     expect(screen.queryByText(MENSAGEM)).toBeNull();
   });
 

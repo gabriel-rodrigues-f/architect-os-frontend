@@ -16,14 +16,15 @@ import { cn } from "@/lib/utils";
  * É um `<a>` de verdade: endereço na barra de status, alcançável por Tab,
  * abrível em aba nova pelo navegador. O anel de foco é o único da casa.
  */
+/**
+ * A TINTA do link de texto, publicada. Quem navega pelo roteador não pode usar
+ * o `<a>` deste arquivo — perderia o `<Link>` — e copiar a classe espalharia o
+ * `hover:underline` que esta régua existe para concentrar. A classe mora aqui,
+ * com o dono; o `<Link>` a importa.
+ */
+export const textLinkClass =
+  "rounded-sm text-primary underline-offset-4 hover:underline focus-visible:focus-ring";
+
 export function TextLink({ className, ...props }: ComponentPropsWithoutRef<"a">) {
-  return (
-    <a
-      {...props}
-      className={cn(
-        "rounded-sm text-primary underline-offset-4 hover:underline focus-visible:focus-ring",
-        className,
-      )}
-    />
-  );
+  return <a {...props} className={cn(textLinkClass, className)} />;
 }

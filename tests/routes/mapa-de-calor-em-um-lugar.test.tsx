@@ -21,7 +21,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { Route as DashboardRoute } from "@/routes/index";
 import { Route as ProgressionRoute } from "@/routes/progression";
-import { fixtureAdminUser, fixtureAssignedTechLeadUser, fixtureState } from "../helpers/fixtures";
+import { fixtureSupportUser, fixtureAssignedTechLeadUser, fixtureState } from "../helpers/fixtures";
+import { executiveBriefingRoute } from "../helpers/executive-briefing";
 import { mockAppFetch, operationsOverviewRoute, renderWithApp } from "../helpers/render-app";
 
 /**
@@ -53,7 +54,11 @@ describe("o mapa de calor mora em um lugar só", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, { user: fixtureAssignedTechLeadUser, state: fixtureState });
+    mockAppFetch(fetchMock, {
+      user: fixtureAssignedTechLeadUser,
+      state: fixtureState,
+      routes: [executiveBriefingRoute],
+    });
   });
 
   afterEach(() => {
@@ -64,7 +69,7 @@ describe("o mapa de calor mora em um lugar só", () => {
 
   it("o Painel do tech lead não desenha a matriz pessoa × capacidade — ela mora na Progressão", async () => {
     renderWithApp(<DashboardPage />);
-    await screen.findByText("Ações da Liderança");
+    await screen.findByText("Painel Executivo");
 
     expect(screen.queryByTestId("heatmap-scroll")).toBeNull();
     expect(screen.queryByRole("columnheader", { name: "Profissional" })).toBeNull();
@@ -72,9 +77,9 @@ describe("o mapa de calor mora em um lugar só", () => {
 
   it("D1 (dono, 2026-09-05): o Painel de operação do admin conta as avaliações do ciclo por estado — sem matriz, sem nome", async () => {
     mockAppFetch(fetchMock, {
-      user: fixtureAdminUser,
+      user: fixtureSupportUser,
       state: fixtureState,
-      routes: [operationsOverviewRoute],
+      routes: [executiveBriefingRoute, operationsOverviewRoute],
     });
     renderWithApp(<DashboardPage />);
     await screen.findByText("Visão do Sistema");

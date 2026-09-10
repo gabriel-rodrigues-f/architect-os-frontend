@@ -28,6 +28,7 @@ import {
   Type,
   UserCog,
   Users,
+  Gauge,
 } from "lucide-react";
 
 import type { SessionUser } from "./api";
@@ -129,6 +130,12 @@ export const NAV_GROUPS: NavGroup[] = [
     labelKey: "nav.group.operation",
     items: [
       { to: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
+      {
+        to: "/system-view",
+        labelKey: "nav.systemView",
+        icon: Gauge,
+        systemOperationOnly: true,
+      },
       {
         to: "/team",
         labelKey: "nav.team",

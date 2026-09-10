@@ -5,6 +5,7 @@ const {
   sessionPolicy,
   supportAccess,
   analyticsGateway,
+  executiveDashboardGateway,
   professionalsGateway,
   assessmentGateway,
   authGateway,
@@ -47,6 +48,7 @@ export const stateContextsApi = { ...stateContextsGateway };
 export const evolutionApi = { ...evolutionGateway };
 export const calibrationApi = { ...calibrationGateway };
 export const analyticsApi = { ...analyticsGateway };
+export const executiveDashboardApi = { ...executiveDashboardGateway };
 export const noticesApi = { ...noticesGateway };
 export const reportsApi = { ...reportsGateway };
 export const teamsApi = { ...teamsGateway };

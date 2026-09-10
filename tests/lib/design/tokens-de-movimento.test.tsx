@@ -105,12 +105,14 @@ describe("superfície interativa — hover em cartão e linha com ação", () =>
 
   it("é aplicada nos cartões do Time e nas linhas com ação (Painel e tabela do Time)", () => {
     const team = readFileSync(resolve(process.cwd(), "src/components/app/team-shared.tsx"), "utf8");
-    const painel = readFileSync(resolve(process.cwd(), "src/routes/index.tsx"), "utf8");
+    // ONDA 3 — o Painel saiu de `routes/index.tsx` (que hoje só despacha por
+    // papel) e virou `components/app/executive-panel.tsx`. A régua não mudou:
+    // linha com ação usa a utility.
+    const painel = readFileSync(
+      resolve(process.cwd(), "src/components/app/executive-panel.tsx"),
+      "utf8",
+    );
     expect(team.match(/surface-interactive/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
-    // No Painel a utility aparece UMA vez: as filas da liderança eram três
-    // colunas copiadas e viraram um componente só (`LeadQueueColumn`) quando a
-    // fila de evidências saiu (dono, 2026-09-08, regra 17). O que a régua pede
-    // é que a linha com ação use a utility, não que ela seja repetida.
     expect(painel.match(/surface-interactive/g)?.length ?? 0).toBeGreaterThanOrEqual(1);
   });
 });

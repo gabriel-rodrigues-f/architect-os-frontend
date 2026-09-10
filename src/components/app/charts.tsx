@@ -35,6 +35,10 @@ const GapSeverityFigure = lazy(() =>
   import("./charts-recharts").then((charts) => ({ default: charts.GapSeverityFigure })),
 );
 
+const CycleFunnelFigure = lazy(() =>
+  import("./charts-recharts").then((charts) => ({ default: charts.CycleFunnelFigure })),
+);
+
 function ChartPlaceholder() {
   return <div aria-hidden="true" className="h-full w-full rounded-md bg-muted/40" />;
 }
@@ -617,6 +621,42 @@ export function GapSeverityChart({ data, height = 220 }: { data: SeverityBar[]; 
       }
     >
       <GapSeverityFigure data={data} label={t("chart.axis.count")} />
+    </ChartFrame>
+  );
+}
+
+export interface FunnelBar {
+  step: string;
+  people: number;
+  color: string;
+}
+
+/**
+ * O FUNIL DO CICLO — o único gráfico do Painel Executivo (onda 3).
+ *
+ * Os quatro degraus são MUTUAMENTE EXCLUSIVOS e somam a população em escopo:
+ * o funil pronto do backend não servia porque os degraus dele são
+ * cumulativos, e um funil cumulativo não diz onde o ciclo travou.
+ */
+export function CycleFunnelChart({ data, height = 220 }: { data: FunnelBar[]; height?: number }) {
+  const { t } = useI18n();
+  const label = t("chart.funnel.label");
+  return (
+    <ChartFrame
+      label={label}
+      height={height}
+      isEmpty={data.every((bar) => bar.people === 0)}
+      emptyMessage={t("chart.empty.funnel")}
+      emptyHint={t("chart.empty.funnel.hint")}
+      dataTable={
+        <DataTable
+          caption={label}
+          columns={[t("chart.axis.funnelStep"), t("chart.axis.people")]}
+          rows={data.map((bar) => [bar.step, bar.people])}
+        />
+      }
+    >
+      <CycleFunnelFigure data={data} label={t("chart.axis.people")} />
     </ChartFrame>
   );
 }

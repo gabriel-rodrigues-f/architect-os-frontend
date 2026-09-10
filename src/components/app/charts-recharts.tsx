@@ -367,6 +367,50 @@ export function AssessmentCoverageFigure({
   );
 }
 
+/**
+ * O FUNIL DO CICLO — quatro barras HORIZONTAIS, um degrau cada, sobre a
+ * população em escopo. É o ÚNICO gráfico do Painel Executivo: ele responde
+ * "em que degrau o ciclo travou e de quem é a ação", e gráfico que não
+ * responde pergunta não entra na tela.
+ *
+ * Horizontal e não vertical porque o rótulo do degrau é uma frase ("Sem
+ * avaliação aberta"), e frase deitada no eixo X vira abreviação.
+ */
+export function CycleFunnelFigure({
+  data,
+  label,
+}: {
+  data: { step: string; people: number; color: string }[];
+  label: string;
+}) {
+  const { reducedMotion, increasedContrast } = useDisplayPreferences();
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16, top: 8 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={CHART_INK.grid} horizontal={false} />
+        <XAxis type="number" allowDecimals={false} tick={axisTick} stroke={CHART_INK.grid} />
+        <YAxis type="category" dataKey="step" width={150} tick={axisTick} stroke={CHART_INK.grid} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          itemStyle={{ color: CHART_INK.surfaceText }}
+          cursor={{ fill: CHART_INK.grid, fillOpacity: 0.4 }}
+        />
+        <Bar
+          dataKey="people"
+          name={label}
+          radius={[0, 3, 3, 0]}
+          {...(increasedContrast ? { stroke: CHART_INK.surfaceText, strokeWidth: 1 } : {})}
+          isAnimationActive={!reducedMotion}
+        >
+          {data.map((bar) => (
+            <Cell key={bar.step} fill={bar.color} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
 /** Distâncias do time por severidade: uma barra por faixa, na cor da faixa. */
 export function GapSeverityFigure({
   data,

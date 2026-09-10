@@ -145,10 +145,17 @@ const NOME_DE_GUARDA = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
  * seção 7). Guarda de alcance ali seria esconder de alguém a própria conta, e
  * o recorte do que ela mostra é do servidor — cada pessoa lê a conta dela.
  */
+/**
+ * ONDA 3 DO PAINEL EXECUTIVO — +1 em `opera-o-sistema` (5 → 6): a "Visão do
+ * Sistema" ganhou endereço próprio (`/system-view`). Ela já existia, mas
+ * escondida DENTRO de `/`, escolhida por papel — e por isso nenhuma régua de
+ * alcance a enxergava. Agora ela declara o dono como qualquer outra tela, e o
+ * Painel de negócio de `/` passa a servir também o administrador.
+ */
 const DISTRIBUICAO_ESPERADA = {
   publica: 1,
   autenticado: 8,
-  "opera-o-sistema": 5,
+  "opera-o-sistema": 6,
   "lead-com-vinculo": 2,
   calibracao: 1,
   lideranca: 3,

@@ -172,6 +172,14 @@
     "/settings": {
       "alcance": "autenticado"
     },
+    "/system-view": {
+      "alcance": "opera-o-sistema",
+      "guarda": "requireSystemOperatorReach",
+      "sinal": "operatesTheSystem",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/painel-executivo.test.tsx"
+    },
     "/team": {
       "alcance": "lideranca",
       "guarda": "requireLeadershipReach",

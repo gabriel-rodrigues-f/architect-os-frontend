@@ -30,6 +30,7 @@ import { Route as ProgressionRouteImport } from './routes/progression'
 import { Route as ScoringRulersRouteImport } from './routes/scoring-rulers'
 import { Route as SetPasswordRouteImport } from './routes/set-password'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SystemViewRouteImport } from './routes/system-view'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as TeamRulesRouteImport } from './routes/team-rules'
 import { Route as TeamsRouteImport } from './routes/teams'
@@ -148,6 +149,11 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SystemViewRoute = SystemViewRouteImport.update({
+  id: '/system-view',
+  path: '/system-view',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TeamRoute = TeamRouteImport.update({
   id: '/team',
   path: '/team',
@@ -236,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/scoring-rulers': typeof ScoringRulersRoute
   '/set-password': typeof SetPasswordRoute
   '/settings': typeof SettingsRoute
+  '/system-view': typeof SystemViewRoute
   '/team': typeof TeamRoute
   '/team-rules': typeof TeamRulesRoute
   '/teams': typeof TeamsRoute
@@ -271,6 +278,7 @@ export interface FileRoutesByTo {
   '/scoring-rulers': typeof ScoringRulersRoute
   '/set-password': typeof SetPasswordRoute
   '/settings': typeof SettingsRoute
+  '/system-view': typeof SystemViewRoute
   '/team': typeof TeamRoute
   '/team-rules': typeof TeamRulesRoute
   '/teams': typeof TeamsRoute
@@ -306,6 +314,7 @@ export interface FileRoutesById {
   '/scoring-rulers': typeof ScoringRulersRoute
   '/set-password': typeof SetPasswordRoute
   '/settings': typeof SettingsRoute
+  '/system-view': typeof SystemViewRoute
   '/team': typeof TeamRoute
   '/team-rules': typeof TeamRulesRoute
   '/teams': typeof TeamsRoute
@@ -343,6 +352,7 @@ export interface FileRouteTypes {
     | '/scoring-rulers'
     | '/set-password'
     | '/settings'
+    | '/system-view'
     | '/team'
     | '/team-rules'
     | '/teams'
@@ -378,6 +388,7 @@ export interface FileRouteTypes {
     | '/scoring-rulers'
     | '/set-password'
     | '/settings'
+    | '/system-view'
     | '/team'
     | '/team-rules'
     | '/teams'
@@ -412,6 +423,7 @@ export interface FileRouteTypes {
     | '/scoring-rulers'
     | '/set-password'
     | '/settings'
+    | '/system-view'
     | '/team'
     | '/team-rules'
     | '/teams'
@@ -448,6 +460,7 @@ export interface RootRouteChildren {
   ScoringRulersRoute: typeof ScoringRulersRoute
   SetPasswordRoute: typeof SetPasswordRoute
   SettingsRoute: typeof SettingsRoute
+  SystemViewRoute: typeof SystemViewRoute
   TeamRoute: typeof TeamRoute
   TeamRulesRoute: typeof TeamRulesRoute
   TeamsRoute: typeof TeamsRoute
@@ -607,6 +620,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/system-view': {
+      id: '/system-view'
+      path: '/system-view'
+      fullPath: '/system-view'
+      preLoaderRoute: typeof SystemViewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/team': {
       id: '/team'
       path: '/team'
@@ -740,6 +760,7 @@ const rootRouteChildren: RootRouteChildren = {
   ScoringRulersRoute: ScoringRulersRoute,
   SetPasswordRoute: SetPasswordRoute,
   SettingsRoute: SettingsRoute,
+  SystemViewRoute: SystemViewRoute,
   TeamRoute: TeamRoute,
   TeamRulesRoute: TeamRulesRoute,
   TeamsRoute: TeamsRoute,
