@@ -282,11 +282,16 @@ function MentoringTimelineItem({
         </div>
       </div>
       {/*
-        Um bloco só, chamado "Notas" (dono, 2026-09-09): *"as únicas coisas que
-        quero ver são Preparação do 1:1, gerado por IA, como já está, regua
-        cronológica de mentorias e um único bloco de anotações chamado
-        'Notas'."* E, sobre os dois blocos que ainda apareciam na sessão
-        antiga: *"deve morrer totalmente, front, back e banco."*
+        Um bloco só, chamado "Notas" (dono, 2026-09-09, manhã): *"as únicas
+        coisas que quero ver são Preparação do 1:1, gerado por IA, como já
+        está, regua cronológica de mentorias e um único bloco de anotações
+        chamado 'Notas'."* E, sobre os dois blocos que ainda apareciam na
+        sessão antiga: *"deve morrer totalmente, front, back e banco."*
+
+        À NOITE do mesmo dia ele tirou a primeira das três: *"Em Mentoria e
+        1:1, pode remover a parte da IA, não é útil. Mantenha somente o bloco
+        Linha do Tempo."* Sobraram a régua cronológica e as Notas — que é o
+        que esta lista desenha.
 
         Com Decisões e Ações fora, o botão "Criar ação no PDI" foi junto — o
         mesmo pedido tirou o vínculo com o PDI daqui. O item da linha do tempo

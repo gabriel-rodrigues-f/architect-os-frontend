@@ -43,7 +43,6 @@ export * from "./RevealBlock";
 export * from "./RoleSelect";
 export * from "./SectionHelp";
 export * from "./SupportAccessDialog";
-export * from "./OneOnOnePreparationNarration";
 export * from "./SessionScriptAssistant";
 export * from "./SetPasswordScreen";
 export * from "./SingleSelectFilter";

@@ -272,16 +272,12 @@ const generationProfile = z.union([
 ]);
 
 /**
- * Dono, 2026-09-07: o roteiro de 1:1 se consolidou na preparação do 1:1, e o
- * que ele tinha — o perfil com que foi gerado e o selo de procedência que
- * permite salvar como sessão — passou a vir daqui.
+ * O roteiro de PDI — o único conselho com perfil de geração que sobrou.
+ *
+ * Sem pauta e sem selo: a Preparação do 1:1, que era a irmã dele e a única
+ * que trazia `scriptProvenance`, saiu do produto em 2026-09-09 com a IA da
+ * tela de Mentoria e 1:1.
  */
-export const oneOnOnePreparationResponseSchema = personAdvice.extend({
-  profile: generationProfile,
-  scriptProvenance: z.string(),
-});
-
-/** Só o roteiro de PDI sobrou: sem pauta, sem selo. */
 export const sessionScriptAdviceResponseSchema = personAdvice.extend({
   profile: generationProfile,
   outline: z.array(z.string()),

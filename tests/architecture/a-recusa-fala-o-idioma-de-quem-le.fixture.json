@@ -1110,22 +1110,6 @@
         "\"Escolha a senioridade do profissional — o nível de carreira é obrigatório para ele.\""
       ]
     },
-    "SessionScriptProvenanceIncompleteError": {
-      "arquivo": "src/modules/mentoring/domain/errors/mentoring-errors.ts",
-      "code": "SESSION_SCRIPT_PROVENANCE_INCOMPLETE",
-      "status": 400,
-      "mensagens": [
-        "\"A procedência do roteiro precisa dizer as duas coisas: quando ele foi gerado e quem pediu a geração.\""
-      ]
-    },
-    "SessionScriptProvenanceUnreadableError": {
-      "arquivo": "src/modules/mentoring/domain/errors/mentoring-errors.ts",
-      "code": "SESSION_SCRIPT_PROVENANCE_UNREADABLE",
-      "status": 400,
-      "mensagens": [
-        "\"Não foi possível confirmar a procedência deste roteiro. Gere o roteiro novamente e salve a partir dele.\""
-      ]
-    },
     "SpecializationCompetencyInvalidError": {
       "arquivo": "src/modules/people/domain/errors/people-errors.ts",
       "code": "SPECIALIZATION_COMPETENCY_INVALID",

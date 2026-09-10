@@ -20,9 +20,16 @@ import pt from "@/locales/pt.json";
  * entra nesta lista no mesmo commit — a lista é o inventário de quem tem IA
  * na tela, e é o que impede a próxima nascer sem o limite escrito.
  */
+/**
+ * `mentoring` SAIU desta lista em 2026-09-09, e a saída é a notícia: o dono
+ * tirou a IA da tela de Mentoria e 1:1 (*"pode remover a parte da IA, não é
+ * útil. Mantenha somente o bloco Linha do Tempo"*). A ajuda dela deixou de
+ * prometer o que a IA faz porque a tela deixou de ter IA — a lista continua
+ * sendo o INVENTÁRIO de quem tem assistente, e sair dela é o que uma tela sem
+ * assistente faz.
+ */
 const TELAS_COM_IA = [
   "professionalRoadmap",
-  "mentoring",
   "developmentPlans",
   "calibration",
   "competencyMatrix",
@@ -76,7 +83,13 @@ describe("a ajuda de toda tela com IA diz o que a IA faz e o que ela NÃO decide
     });
   }
 
+  /**
+   * O piso desceu de 5 para 4 em 2026-09-09, quando `mentoring` saiu do
+   * inventário com a IA daquela tela. Ele existe contra a catraca que emudece
+   * — uma lista vazia passaria calada —, e por isso acompanha o produto para
+   * baixo em vez de obrigar alguém a inventar uma tela para caber.
+   */
   it("o inventário não está vazio — catraca vazia é catraca decorativa", () => {
-    expect(TELAS_COM_IA.length).toBeGreaterThanOrEqual(5);
+    expect(TELAS_COM_IA.length).toBeGreaterThanOrEqual(4);
   });
 });

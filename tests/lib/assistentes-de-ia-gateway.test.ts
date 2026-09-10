@@ -67,23 +67,11 @@ afterEach(() => {
 });
 
 describe("assistentes da pessoa — a URL de cada operação de negócio", () => {
-  /**
-   * Dono, 2026-09-07: o roteiro de 1:1 se consolidou na preparação, e o
-   * perfil de geração e o selo de procedência passaram a viajar com ela.
+  /*
+   * AQUI MORAVAM os dois casos de `prepareOneOnOne` — a rota que ela lia e o
+   * selo de procedência que chegava com ela. A operação saiu do gateway em
+   * 2026-09-09, com a IA da tela de Mentoria e 1:1.
    */
-  it("preparar o 1:1 lê a rota da pessoa com o perfil de geração escolhido", async () => {
-    await preparaO1x1("methodical");
-    expect(urlDaChamada().pathname).toBe("/api/v1/professionals/ana/one-on-one-preparation");
-    expect(urlDaChamada().searchParams.get("profile")).toBe("methodical");
-    expect(urlDaChamada().searchParams.has("agenda")).toBe(false);
-  });
-
-  it("a preparação chega com o perfil e o selo que permite salvar como sessão", async () => {
-    const lida = await preparaO1x1("moderate");
-    expect(lida.profile).toBe("moderate");
-    expect(lida.scriptProvenance).toBe("selo-opaco");
-  });
-
   it("o roteiro de PDI leva só o perfil de geração — a pauta morreu com o roteiro de 1:1", async () => {
     fetchMock.mockResolvedValue(
       jsonResponse({ data: { ...conselho, profile: "methodical", outline: ["A"] } }),
@@ -226,7 +214,7 @@ describe("tempo-limite — a única rota da casa que pode demorar minutos", () =
         }),
     );
     const falha = await pessoas(5)
-      .prepareOneOnOne({ professionalId: "ana", profile: "moderate" })
+      .writeSessionScript({ professionalId: "ana", profile: "moderate" })
       .catch((erro: unknown) => erro);
     expect(falha).toBeInstanceOf(AssistantTimedOutError);
   });
@@ -247,7 +235,7 @@ describe("tempo-limite — a única rota da casa que pode demorar minutos", () =
   });
 
   it("a resposta que chega a tempo não é confundida com tempo esgotado", async () => {
-    const lido = await preparaO1x1("moderate", 5_000);
+    const lido = await geraRoteiroCom("moderate", 5_000);
     expect(lido.notice).toBe("Isto é uma sugestão.");
   });
 });
@@ -256,12 +244,10 @@ async function geraRoteiro(profile: "empirical" | "moderate" | "methodical"): Pr
   await pessoas().writeSessionScript({ professionalId: "ana", profile });
 }
 
-async function preparaO1x1(
+async function geraRoteiroCom(
   profile: "empirical" | "moderate" | "methodical",
   timeoutMs?: number,
-): ReturnType<HttpPersonAssistantsGateway["prepareOneOnOne"]> {
-  fetchMock.mockResolvedValue(
-    jsonResponse({ data: { ...conselho, profile, scriptProvenance: "selo-opaco" } }),
-  );
-  return pessoas(timeoutMs).prepareOneOnOne({ professionalId: "ana", profile });
+): ReturnType<HttpPersonAssistantsGateway["writeSessionScript"]> {
+  fetchMock.mockResolvedValue(jsonResponse({ data: { ...conselho, profile, outline: ["A"] } }));
+  return pessoas(timeoutMs).writeSessionScript({ professionalId: "ana", profile });
 }

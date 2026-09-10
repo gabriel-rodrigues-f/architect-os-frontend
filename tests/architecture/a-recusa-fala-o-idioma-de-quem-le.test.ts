@@ -99,7 +99,11 @@ const NA_PORTA: readonly string[] = [
 // 95 → 94 (dono, 2026-09-09, ADR-0101): o Começar/Parar/Continuar saiu do
 // produto, e com ele o `AssessmentDevelopmentSummaryVersionConflictError` —
 // o 409 da trava otimista do campo. Desceu porque o produto encolheu.
-const DIVIDA_DE_HOJE = 94;
+// 94 → 92 (dono, 2026-09-09, noite): a IA saiu da Mentoria e 1:1, e com ela
+// as duas recusas do selo de procedência do roteiro
+// (`SESSION_SCRIPT_PROVENANCE_INCOMPLETE` e `..._UNREADABLE`), os dois 400 em
+// prosa. Desceu porque o produto encolheu — nunca porque alguém traduziu duas.
+const DIVIDA_DE_HOJE = 92;
 
 /** Quantas classes de recusa a política JÁ compõe na tela, nos dois idiomas. */
 const TRADUZIDAS_HOJE = 52;
@@ -275,7 +279,11 @@ describe("do corpo do serviço até a frase da tela, sem passar pelo texto dele"
 
 describe("procedência da cópia do contrato do backend", () => {
   it("a cópia enxerga o contrato inteiro, e não um pedaço dele", () => {
-    expect(Object.keys(CLASSES).length).toBe(192);
+    // A IA SAI DA 1:1 (dono, 2026-09-09, noite): 192 → 190. Saíram
+    // `SessionScriptProvenanceIncompleteError` e
+    // `SessionScriptProvenanceUnreadableError`, as duas do selo de procedência
+    // do roteiro de 1:1. Sem geração não há selo a conferir.
+    expect(Object.keys(CLASSES).length).toBe(190);
   });
 
   /**

@@ -71,7 +71,11 @@ import inventarioDoBackend from "./message-codes-de-sucesso.fixture.json";
 // `assessment.developmentSummary.update.success` durou um dia: nasceu de
 // manhã porque este era o único campo da Avaliação sem retorno ao salvar, e
 // saiu à noite com o campo.
-const CODIGOS_ESPERADOS = 64;
+// A IA SAI DA 1:1 (dono, 2026-09-09, noite): 64 − 1 = 63. Saiu
+// `mentoring.recordFromScript.success` com `POST
+// /mentoring-sessions/from-session-script` — não há mais roteiro gerado para
+// salvar como sessão de 1:1.
+const CODIGOS_ESPERADOS = 63;
 
 const PREFIXO_DE_MENSAGEM = "msg.";
 

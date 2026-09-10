@@ -1,4 +1,4 @@
-import { cleanup, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -7,7 +7,6 @@ vi.mock("@tanstack/react-router", () =>
   import("../helpers/ficha-router").then((mod) => mod.reactRouterOfCareerFile()),
 );
 
-import { Route as MentoringRoute } from "@/routes/mentoring";
 import { Route as RoadmapRoute } from "@/routes/professionals.$professionalId.roadmap";
 import type { AppState } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
@@ -16,7 +15,6 @@ import {
   careerLevelsRoute,
   jsonResponse,
   mockAppFetch,
-  renderWithApp,
   type FetchRoute,
 } from "../helpers/render-app";
 import { renderCareerFile } from "../helpers/ficha";
@@ -41,7 +39,6 @@ import { renderCareerFile } from "../helpers/ficha";
  */
 const fetchMock = vi.fn();
 
-const MentoringPage = MentoringRoute.options.component as () => ReactNode;
 const RoadmapPage = RoadmapRoute.options.component as () => ReactNode;
 
 const NIVEL_ATUAL = "arquiteto-de-solucoes-ii";
@@ -91,20 +88,10 @@ const prontidao = {
   },
 };
 
-const preparacao = {
-  ...conselhoBase,
-  narration: "Comece pelo item de PDI mais antigo.",
-  profile: "moderate",
-  scriptProvenance: "selo-opaco",
-};
-
 const rotaDeIa =
   (sufixo: string, responder: () => Response): FetchRoute =>
   (href) =>
     href.includes(sufixo) ? responder() : undefined;
-
-const chamadasA = (sufixo: string): number =>
-  fetchMock.mock.calls.filter((chamada) => String(chamada[0]).includes(sufixo)).length;
 
 beforeEach(() => {
   window.localStorage.setItem("synapse:locale", "pt");
@@ -117,53 +104,21 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("copiloto de 1:1 — onde a conversa acontece", () => {
-  const montaMentoria = (routes: FetchRoute[]) => {
-    mockAppFetch(fetchMock, { user: fixtureAssignedManagerUser, routes });
-    renderWithApp(<MentoringPage />);
-  };
-
-  it("prepara a 1:1 da pessoa escolhida no filtro, e mostra o que o sistema apurou", async () => {
-    montaMentoria([rotaDeIa("one-on-one-preparation", () => jsonResponse(preparacao))]);
-    const usuario = userEvent.setup();
-
-    await usuario.click(await screen.findByRole("button", { name: /Preparar o 1:1/ }));
-
-    await waitFor(() => expect(chamadasA("one-on-one-preparation")).toBe(1));
-    const url = new URL(
-      String(
-        fetchMock.mock.calls.find((chamada) =>
-          String(chamada[0]).includes("one-on-one-preparation"),
-        )![0],
-      ),
-      "http://localhost",
-    );
-    expect(url.pathname).toBe(apiPath("/professionals/ana/one-on-one-preparation"));
-
-    expect(await screen.findByText(/Comece pelo item de PDI mais antigo/)).toBeTruthy();
-    expect(screen.getByText(/Última 1:1 há 40 dias/)).toBeTruthy();
-    expect(screen.getByText(/quem decide é você/)).toBeTruthy();
-  });
-
-  it("com o provedor no chão a linha do tempo continua de pé", async () => {
-    montaMentoria([
-      rotaDeIa("one-on-one-preparation", () =>
-        jsonResponse({ message: "Leitura indisponível", code: "AI_DOWN" }, 503),
-      ),
-    ]);
-    const usuario = userEvent.setup();
-
-    await usuario.click(await screen.findByRole("button", { name: /Preparar o 1:1/ }));
-
-    // A frase de um 5xx é NOSSA (2026-09-09): a do serviço nomeia a dependência.
-    expect(
-      await screen.findByText("Não foi possível gerar a sugestão agora. Tente novamente."),
-    ).toBeTruthy();
-    expect(screen.queryByText("Leitura indisponível")).toBeNull();
-    expect(screen.getByRole("button", { name: /Tentar novamente/ })).toBeTruthy();
-    expect(screen.getByText("Linha do Tempo")).toBeTruthy();
-  });
-});
+/*
+ * AQUI MORAVA "copiloto de 1:1 — onde a conversa acontece", os dois casos da
+ * Preparação do 1:1 na tela de Mentoria: a chamada com a pessoa do filtro, e
+ * o 5xx do provedor virando a NOSSA frase sem derrubar a Linha do Tempo.
+ *
+ * A tela saiu do inventário de IA em 2026-09-09: *"Em Mentoria e 1:1, pode
+ * remover a parte da IA, não é útil."*
+ *
+ * O que os dois casos mediam continua medido, em outro endereço: a chamada
+ * com o perfil escolhido e o 5xx virando frase nossa são do
+ * `ProfiledAdviceSection`, compartilhado, e o bloco de baixo os afirma sobre o
+ * roteiro de PDI. O que deixou de existir é a pergunta específica — se a
+ * queda da IA derrubava a Linha do Tempo —, porque não há mais IA nessa tela
+ * para cair.
+ */
 
 describe("explicação da prontidão — ao lado do veredito determinístico", () => {
   const montaRoteiro = (routes: FetchRoute[]) => {

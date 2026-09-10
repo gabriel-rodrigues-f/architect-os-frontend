@@ -6,13 +6,10 @@ import {
   MentoringFollowUp,
   MentoringTimeline,
   NewMentoringSessionDialog,
-  OneOnOnePreparationNarration,
   PageHeader,
-  ProfiledAdviceSection,
   SectionCard,
   useMentoringTimeline,
 } from "@/components/app";
-import { personAssistantsApi } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
 import { EmptySubject } from "@/lib/empty-subject";
@@ -61,13 +58,13 @@ function MentoringScreen() {
 
   /**
    * A linha do tempo é de LEITURA e mostra todo o alcance — quem foi mentorado
-   * vê as próprias sessões. Registrar sessão e preparar a 1:1 são de quem
-   * mentora, e ninguém mentora a si mesmo (dono, 2026-09-05).
+   * vê as próprias sessões. Registrar sessão é de quem mentora, e ninguém
+   * mentora a si mesmo (dono, 2026-09-05). "Preparar a 1:1" também era, e
+   * saiu do produto em 2026-09-09 com a IA desta tela.
    */
   const menteeOptions = defaultUiAuthorizationPolicy.mentorableBy(user, store.professionals);
   const { filter, setFilter, sessions } = useMentoringTimeline();
   const mentee = store.professionals.find((professional) => professional.id === filter);
-  const canPrepare = mentee !== undefined && defaultUiAuthorizationPolicy.isLeadOf(user, mentee);
   // Dono (2026-09-08): o cadastro sai do filtro e vai para o centro do quadro.
   const semNinguem = store.professionals.length === 0;
 
@@ -100,25 +97,16 @@ function MentoringScreen() {
       )}
 
       {/*
-        Um cartão só de IA (dono, 2026-09-07): o roteiro de 1:1 se consolidou
-        na preparação, que responde na ordem liturgia → resumo do perfil →
-        SWOT, com o perfil de geração que o roteiro tinha.
-      */}
-      {canPrepare && (
-        <ProfiledAdviceSection
-          className="mb-6"
-          title={t("ai.oneOnOne.title")}
-          description={t("ai.oneOnOne.subtitle", { nome: mentee.name })}
-          actionLabel={t("ai.oneOnOne.action")}
-          transcriptHeadline={t("ai.oneOnOne.title")}
-          queryKey={["assistants", "one-on-one-preparation", mentee.id]}
-          ask={(profile) =>
-            personAssistantsApi.prepareOneOnOne({ professionalId: mentee.id, profile })
-          }
-          narration={(text) => <OneOnOnePreparationNarration text={text} />}
-        />
-      )}
+        A IA SAI DAQUI (dono, 2026-09-09): *"Em Mentoria e 1:1, pode remover a
+        parte da IA, não é útil. Mantenha somente o bloco Linha do Tempo."*
 
+        Aqui morava a "Preparação do 1:1" — um cartão com seletor de perfil de
+        geração e o botão "Preparar o 1:1", que respondia na ordem liturgia →
+        resumo do perfil → SWOT. Ela reverte o pedido do MESMO dia que mandava
+        mantê-la; o mais recente vence.
+
+        A tela fica com a Linha do Tempo e o cadastro, que é o que ele pediu.
+      */}
       {!semNinguem && (
         <SectionCard
           title={t("mentor.timeline.title")}

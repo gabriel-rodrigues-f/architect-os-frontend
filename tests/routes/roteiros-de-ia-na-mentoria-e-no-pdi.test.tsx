@@ -8,7 +8,6 @@ vi.mock("@tanstack/react-router", () =>
 );
 
 import { Route as ProfileRoute } from "@/routes/professionals.$professionalId.index";
-import { Route as MentoringRoute } from "@/routes/mentoring";
 import { Route as PlansRoute } from "@/routes/development-plans";
 import type { SessionUser } from "@/lib/api";
 import { apiPath } from "@/lib/api-path";
@@ -34,10 +33,10 @@ import { renderCareerFile } from "../helpers/ficha";
  *  1. a ficha (Visão geral de Talentos do Time) não tem NENHUM botão de IA —
  *     nem roteiro, nem "sugerir item de PDI", nem "verificar sinais", nem
  *     apoio à revisão — para gerente e para tech lead;
- *  2. Mentoria e 1:1 oferece UM cartão de IA só, a "Preparação do 1:1", com
- *     o perfil de geração que o roteiro tinha; o PDI oferece SÓ o roteiro de
- *     PDI. São duas operações de negócio (ADR-0087);
- *  3. o profissional não vê geração de IA em nenhuma das duas.
+ *  2. o PDI oferece SÓ o roteiro de PDI — a "Preparação do 1:1" da Mentoria
+ *     saiu do produto em 2026-09-09, e a ausência dela é medida em
+ *     `a-ia-sai-da-mentoria.test.tsx`;
+ *  3. o profissional não vê geração de IA.
  *
  * E a regra 19 do pedido anterior continua valendo no novo endereço: perfil
  * Moderado por padrão, o perfil viaja, sem chamada duplicada, provedor no
@@ -46,7 +45,6 @@ import { renderCareerFile } from "../helpers/ficha";
 const fetchMock = vi.fn();
 
 const ProfilePage = ProfileRoute.options.component as () => ReactNode;
-const MentoringPage = MentoringRoute.options.component as () => ReactNode;
 const PlansPage = PlansRoute.options.component as () => ReactNode;
 
 const BOTOES_DE_IA = [
@@ -68,8 +66,6 @@ const conselho = {
   narrationUnavailable: null,
   profile: "moderate",
 };
-
-const preparacao = { ...conselho, scriptProvenance: "selo-opaco" };
 
 const roteiroDePdi = {
   ...conselho,
@@ -128,123 +124,23 @@ describe("a ficha de Talentos do Time não gera nada com IA", () => {
   });
 });
 
-describe("Mentoria e 1:1 — um cartão de IA só: a Preparação do 1:1", () => {
-  it("mostra 'Preparação do 1:1' com 'Preparar o 1:1', nenhum roteiro, e o perfil nasce em Moderado", async () => {
-    monta(MentoringPage, fixtureAssignedManagerUser);
-
-    expect(await screen.findByRole("button", { name: /Preparar o 1:1/ })).toBeTruthy();
-    expect(screen.getByText("Preparação do 1:1")).toBeTruthy();
-    expect(screen.queryByText(/Preparação da 1:1/)).toBeNull();
-    expect(screen.queryByText(/Roteiro de 1:1/)).toBeNull();
-    expect(screen.queryByRole("button", { name: /Gerar roteiro/ })).toBeNull();
-    expect(screen.getAllByRole("button", { name: /Preparar o 1:1|Gerar/ })).toHaveLength(1);
-
-    const seletor = screen.getByLabelText(/Perfil de geração/) as HTMLSelectElement;
-    expect(seletor.value).toBe("moderate");
-    expect(seletor.selectedOptions[0]?.textContent).toBe("Moderado");
-  });
-
-  it("preparar leva o perfil escolhido, sem pauta, e mostra a sugestão", async () => {
-    monta(MentoringPage, fixtureAssignedManagerUser, [
-      rotaDe("one-on-one-preparation", () =>
-        jsonResponse({ ...preparacao, profile: "methodical" }),
-      ),
-    ]);
-    const usuario = userEvent.setup();
-
-    await usuario.selectOptions(await screen.findByLabelText(/Perfil de geração/), "methodical");
-    await usuario.click(screen.getByRole("button", { name: /Preparar o 1:1/ }));
-
-    await waitFor(() => expect(urlsDe("one-on-one-preparation").length).toBe(1));
-    const url = urlsDe("one-on-one-preparation")[0]!;
-    expect(url.searchParams.get("profile")).toBe("methodical");
-    expect(url.searchParams.has("agenda")).toBe(false);
-    expect(urlsDe("session-script")).toHaveLength(0);
-
-    expect(await screen.findByText(/Comece perguntando/)).toBeTruthy();
-    expect(screen.getByText(/Distância 2 em Domain Modeling/)).toBeTruthy();
-    expect(screen.getByText(/Quem decide é você/)).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Copiar/ })).toBeTruthy();
-  });
-
-  it("o botão não dispara duas vezes: dois cliques, uma chamada só", async () => {
-    monta(MentoringPage, fixtureAssignedManagerUser);
-    const anterior = fetchMock.getMockImplementation()!;
-    fetchMock.mockImplementation((input: string | URL | Request, init?: RequestInit) => {
-      const href = input instanceof Request ? input.url : String(input);
-      return href.includes("one-on-one-preparation")
-        ? new Promise<Response>(() => undefined)
-        : anterior(input, init);
-    });
-    const usuario = userEvent.setup();
-
-    await usuario.click(await screen.findByRole("button", { name: /Preparar o 1:1/ }));
-    await waitFor(() => expect(urlsDe("one-on-one-preparation").length).toBe(1));
-
-    const gerando = screen.getByRole("button", { name: /Gerando/ });
-    expect(gerando).toHaveProperty("disabled", true);
-    await usuario.click(gerando);
-    expect(urlsDe("one-on-one-preparation").length).toBe(1);
-  });
-
-  it("provedor no chão: o parágrafo some, o aviso aparece e o que o sistema calculou fica", async () => {
-    monta(MentoringPage, fixtureAssignedManagerUser, [
-      rotaDe("one-on-one-preparation", () =>
-        jsonResponse({
-          ...preparacao,
-          narration: null,
-          narrationUnavailable:
-            "A sugestão em linguagem natural está indisponível no momento. O que o sistema calculou continua nesta tela.",
-        }),
-      ),
-    ]);
-    const usuario = userEvent.setup();
-
-    await usuario.click(await screen.findByRole("button", { name: /Preparar o 1:1/ }));
-
-    expect(await screen.findByText(/está indisponível no momento/)).toBeTruthy();
-    expect(screen.getByText(/Distância 2 em Domain Modeling/)).toBeTruthy();
-    expect(screen.queryByText(/Comece perguntando/)).toBeNull();
-  });
-
-  /**
-   * Onda "o erro não conta nada" (2026-09-09): a frase de um 5xx é NOSSA. A do
-   * serviço narrava o estado interno da casa — e nesta tela, o guarda que
-   * confere a saída do modelo contra os números apurados.
-   */
-  it("erro da API vira frase amigável com 'Tentar novamente', e tentar novamente tenta", async () => {
-    let falhar = true;
-    monta(MentoringPage, fixtureAssignedManagerUser, [
-      rotaDe("one-on-one-preparation", () =>
-        falhar
-          ? jsonResponse({ message: "Serviço fora do ar", code: "AI_DOWN" }, 503)
-          : jsonResponse(preparacao),
-      ),
-    ]);
-    const usuario = userEvent.setup();
-
-    await usuario.click(await screen.findByRole("button", { name: /Preparar o 1:1/ }));
-    const recusa = await screen.findByText(
-      "Não foi possível gerar a sugestão agora. Tente novamente.",
-    );
-    expect(recusa.getAttribute("role")).toBe("alert");
-    expect(screen.queryByText("Serviço fora do ar")).toBeNull();
-
-    falhar = false;
-    await usuario.click(screen.getByRole("button", { name: /Tentar novamente/ }));
-
-    expect(await screen.findByText(/Comece perguntando/)).toBeTruthy();
-    expect(urlsDe("one-on-one-preparation").length).toBe(2);
-  });
-
-  it("o profissional não vê geração de IA", async () => {
-    monta(MentoringPage, fixtureMemberUser);
-    expect(await screen.findByText("Mentoria e 1:1")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /Preparar o 1:1/ })).toBeNull();
-    expect(screen.queryByRole("button", { name: /Gerar roteiro/ })).toBeNull();
-    expect(screen.queryByLabelText(/Perfil de geração/)).toBeNull();
-  });
-});
+/*
+ * AQUI MORAVA "Mentoria e 1:1 — um cartão de IA só: a Preparação do 1:1", o
+ * bloco inteiro da IA daquela tela.
+ *
+ * Ele saiu em 2026-09-09: *"Em Mentoria e 1:1, pode remover a parte da IA, não
+ * é útil. Mantenha somente o bloco Linha do Tempo."* A ausência da IA naquela
+ * tela é medida agora por um arquivo próprio,
+ * `tests/routes/a-ia-sai-da-mentoria.test.tsx`, que responde a preparação
+ * inteira no `fetch` e ainda assim não encontra o botão — é a diferença entre
+ * "o bloco não existe" e "o bloco não achou o que desenhar".
+ *
+ * O que este arquivo continua medindo: a ficha de Talentos do Time sem IA
+ * nenhuma (acima) e o roteiro de PDI no PDI (abaixo). A régua da regra 19 —
+ * perfil Moderado por padrão, o perfil viaja, sem chamada duplicada, provedor
+ * no chão não leva os fatos junto, erro vira frase com "tentar novamente" —
+ * está medida no bloco do PDI e em `texto-de-gente-nao-vira-fato.test.tsx`.
+ */
 
 describe("PDI — só o roteiro de PDI", () => {
   it("mostra 'Gerar roteiro de PDI' e não 'Gerar roteiro de 1:1'", async () => {

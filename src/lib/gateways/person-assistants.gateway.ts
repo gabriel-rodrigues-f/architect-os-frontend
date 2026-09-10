@@ -2,7 +2,6 @@ import type { ApiClient } from "../api-client";
 import {
   careerReadinessAdviceResponseSchema,
   developmentPlanAdviceResponseSchema,
-  oneOnOnePreparationResponseSchema,
   sessionScriptAdviceResponseSchema,
 } from "../api-schemas";
 import { AssistantCall, type GenerationProfileName, type WrittenByPerson } from "../assistants";
@@ -11,10 +10,13 @@ import { AssistantCall, type GenerationProfileName, type WrittenByPerson } from 
  * ADR-0087 do backend, do lado da tela — os assistentes que falam SOBRE UMA
  * PESSOA.
  *
- * Quatro operações de negócio, quatro nomes de negócio, nunca um `ask(tipo)`:
- * preparar o 1:1, recomendar um item de PDI, explicar a prontidão e
- * escrever o roteiro de PDI são coisas diferentes, feitas em telas
- * diferentes, por quem tem alcances diferentes.
+ * TRÊS operações de negócio, três nomes de negócio, nunca um `ask(tipo)`:
+ * recomendar um item de PDI, explicar a prontidão e escrever o roteiro de PDI
+ * são coisas diferentes, feitas em telas diferentes, por quem tem alcances
+ * diferentes.
+ *
+ * Eram quatro até 2026-09-09: `prepareOneOnOne` saiu quando o dono tirou a IA
+ * da tela de Mentoria e 1:1 (*"pode remover a parte da IA, não é útil"*).
  *
  * A queda do provedor aqui NÃO é erro de HTTP: o backend responde 200 com
  * `narration: null` e a frase de indisponibilidade em `narrationUnavailable`,
@@ -40,17 +42,7 @@ export interface PersonAdvice {
   narrationUnavailable: string | null;
 }
 
-/**
- * A preparação do 1:1 (dono, 2026-09-07): liturgia → resumo do perfil → SWOT
- * na narração, com o perfil com que foi gerada e o selo de procedência que o
- * roteiro de 1:1 tinha — é ela que pode virar sessão registrada.
- */
-export interface OneOnOnePreparation extends PersonAdvice {
-  profile: GenerationProfileName;
-  scriptProvenance: string;
-}
-
-/** O roteiro de PDI — a única pauta que sobrou. */
+/** O roteiro de PDI — a única pauta que sobrou, e agora o único conselho com perfil. */
 export interface SessionScriptAdvice extends PersonAdvice {
   profile: GenerationProfileName;
   outline: string[];
@@ -81,7 +73,13 @@ export interface DevelopmentPlanAdvice extends PersonAdvice {
   distance: SelectedDistance;
 }
 
-/** Preparação do 1:1 e roteiro de PDI pedem a mesma coisa: a pessoa e o perfil. */
+/**
+ * O que o roteiro de PDI pede: a pessoa e o perfil.
+ *
+ * O nome fala de PERFIL, e não do roteiro, porque o tipo nasceu servindo a
+ * DOIS pedidos idênticos (a preparação do 1:1 e o roteiro). A preparação saiu
+ * em 2026-09-09; o nome fica, porque é o que o campo descreve.
+ */
 export interface ProfiledAdviceRequest {
   professionalId: string;
   profile: GenerationProfileName;
@@ -93,7 +91,6 @@ export interface DevelopmentPlanRecommendationRequest {
 }
 
 export interface PersonAssistantsGateway {
-  prepareOneOnOne(request: ProfiledAdviceRequest): Promise<OneOnOnePreparation>;
   writeSessionScript(request: ProfiledAdviceRequest): Promise<SessionScriptAdvice>;
   explainCareerReadiness(professionalId: string): Promise<CareerReadinessAdvice>;
   recommendDevelopmentPlanItem(
@@ -107,17 +104,6 @@ export class HttpPersonAssistantsGateway implements PersonAssistantsGateway {
   constructor(client: ApiClient, timeoutMs?: number) {
     this.call = new AssistantCall(client, timeoutMs);
   }
-
-  prepareOneOnOne = ({
-    professionalId,
-    profile,
-  }: ProfiledAdviceRequest): Promise<OneOnOnePreparation> =>
-    this.call.read(
-      AssistantCall.resourceOf(`/professionals/${professionalId}/one-on-one-preparation`, {
-        profile,
-      }),
-      (data) => oneOnOnePreparationResponseSchema.parse(data),
-    );
 
   writeSessionScript = ({
     professionalId,
