@@ -116,13 +116,19 @@ const NA_PORTA: readonly string[] = [
 // constante estática e nunca chegaram a entrar na conta — mas entraram na
 // tela, e por isso sobem em `TRADUZIDAS_HOJE`.
 //
-// O que ficou de fora, e é a fronteira da regra 18, não teimosia: as três
-// recusas de ALCANCE que ainda respondem 403
-// (`ProfessionalTrajectoryNotVisibleError`, `TeamTransitionsNotVisibleError`,
-// `TeamEvolutionProfessionalsNotVisibleError`). Dar código próprio a elas
+// O que ficou de fora, e é a fronteira da regra 18, não teimosia: as recusas
+// de ALCANCE que ainda respondem 403 (`ProfessionalTrajectoryNotVisibleError`
+// e `TeamEvolutionProfessionalsNotVisibleError`). Dar código próprio a elas
 // devolveria o oráculo; o conserto delas é virar 404, e está nomeado no
-// veredito (§7 item 6 e passo 5).
-const DIVIDA_DE_HOJE = 82;
+// veredito (§7 item 6 e passo 5). Eram TRÊS até 2026-09-10, quando
+// `TeamTransitionsNotVisibleError` saiu do produto com o relatório agregado
+// de transições por time — a dívida dela não foi paga, ela deixou de existir.
+//
+// AS CINCO REMOÇÕES DO DONO (2026-09-10): 82 → 81. Uma classe a menos em
+// dívida — a das transições por time. A da Calibração de Líderes NÃO estava
+// nesta conta: ela tinha código próprio (`CALIBRATION_RESERVED_TO_MANAGER`) e
+// frase composta, e saiu do lado TRADUZIDO (68 → 67).
+const DIVIDA_DE_HOJE = 81;
 
 /**
  * Quantas classes de recusa a política JÁ compõe na tela, nos dois idiomas.
@@ -132,7 +138,7 @@ const DIVIDA_DE_HOJE = 82;
  * ato entram inteiras, e o 52 já estava defasado — era piso, e piso não
  * acompanha sozinho.
  */
-const TRADUZIDAS_HOJE = 68;
+const TRADUZIDAS_HOJE = 67;
 
 const ORIGEM_DA_COPIA = "backend/tests/shared/errors/contrato-de-erro.fixture.json";
 
@@ -312,7 +318,11 @@ describe("procedência da cópia do contrato do backend", () => {
     // AS DUAS LEITURAS DE APOIO SAEM (dono, 2026-09-10): 190 → 189. Saiu
     // `CalibrationAssistanceNotLeadError`, o 404 de alcance da leitura de
     // apoio à calibração. A curadoria era de admin e não tinha classe própria.
-    expect(Object.keys(CLASSES).length).toBe(189);
+    // AS CINCO REMOÇÕES DO DONO (2026-09-10): 189 → 187. Saíram
+    // `CalibrationNotVisibleError` (a tela de Calibração de Líderes) e
+    // `TeamTransitionsNotVisibleError` (o relatório agregado de transições
+    // por time), com as duas rotas que as lançavam.
+    expect(Object.keys(CLASSES).length).toBe(187);
   });
 
   /**

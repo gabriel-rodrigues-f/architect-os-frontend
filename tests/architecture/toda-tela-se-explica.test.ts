@@ -44,7 +44,11 @@ const ROTAS = resolve(AQUI, "../../src/routes");
 const SEM_EXPLICACAO_AINDA: readonly string[] = [];
 
 /** As duas que o dono nomeou. Não podem voltar a ficar mudas. */
-const PEDIDAS_PELO_DONO: readonly string[] = ["team-rules.tsx", "calibration.tsx"];
+/*
+ * Eram DUAS até 2026-09-10, quando a Calibração de Líderes saiu do produto a
+ * pedido do dono. A régua não mudou; o exemplo dela é que deixou de existir.
+ */
+const PEDIDAS_PELO_DONO: readonly string[] = ["team-rules.tsx"];
 
 class Tela {
   constructor(

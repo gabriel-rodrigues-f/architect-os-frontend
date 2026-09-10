@@ -407,9 +407,6 @@ function NextStepCallout({ exposedCount }: { exposedCount: number }) {
         <Link to="/mentoring" className="underline underline-offset-2">
           {t("cap.nextStep.mentoring")}
         </Link>
-        <Link to="/training-needs" className="underline underline-offset-2">
-          {t("cap.nextStep.trainingNeeds")}
-        </Link>
       </span>
     </Callout>
   );

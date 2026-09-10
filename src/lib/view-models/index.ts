@@ -1,6 +1,5 @@
 export * from "./professional-profile-view-model";
 export * from "./assessment-view-model";
-export * from "./calibration-view-model";
 export * from "./career-roadmap-view-model";
 export * from "./career-statement-view-model";
 export * from "./capability-foundation-editor";
@@ -16,7 +15,6 @@ export * from "./notices-view-model";
 export * from "./operational-settings-editor";
 export * from "./plan-item-from-gap";
 export * from "./scoring-bands-editor";
-export * from "./team-configuration";
 export * from "./team-leadership";
 export * from "./team-names";
 export * from "./team-registry-view-model";
@@ -24,7 +22,6 @@ export * from "./team-rule-editor-view-model";
 export * from "./team-view-model";
 export * from "./text-template-editor";
 export * from "./vocabulary-editor";
-export * from "./team-transitions-view-model";
 export * from "./team-transfers-view-model";
 export * from "./coverage-table-order";
 export * from "./heatmap-row-order";
@@ -34,6 +31,5 @@ export {
   RadarRows,
   type AxisCoverage,
   type CapabilityMeasure,
-  type ComparisonRadarRow,
   type CurrentAgainstTargetRow,
 } from "./radar-rows.js";

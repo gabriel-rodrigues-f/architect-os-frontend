@@ -250,7 +250,6 @@ export class RefusalPhrase {
       "ASSESSMENT_FIELD_NOT_IN_ASSESSMENT",
       "refusal.assessmentFieldNotInAssessment",
     ),
-    new FixedRefusalRule("CALIBRATION_RESERVED_TO_MANAGER", "refusal.calibrationReservedToManager"),
     new FixedRefusalRule("AUDIT_TRAIL_RESERVED_TO_ADMIN", "refusal.auditTrailReservedToAdmin"),
     new FixedRefusalRule("PLAN_WRITING_RESERVED_TO_LEAD", "refusal.planWritingReservedToLead"),
     new FixedRefusalRule(

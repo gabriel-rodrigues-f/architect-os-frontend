@@ -9,7 +9,6 @@ import {
   ConfirmDialog,
   DataOriginCallout,
   EmptyState,
-  KeyFigureCard,
   PageAction,
   PageHeader,
   QuerySection,
@@ -18,7 +17,6 @@ import {
   SectionCard,
   Seniority,
   SingleSelectFilter,
-  StatTones,
   StatusBadge,
   TruncatedText,
 } from "@/components/app";
@@ -36,7 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAsyncSubmit, useSuccessToast } from "@/hooks";
-import { authApi, teamRosterApi, teamsApi, teamTransitionsApi, type SessionUser } from "@/lib/api";
+import { authApi, teamRosterApi, teamsApi, type SessionUser } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest } from "@/lib/context-scope";
 import type { Professional } from "@/lib/domain";
@@ -47,11 +45,6 @@ import {
   type TeamMemberRole,
 } from "@/lib/gateways/auth.gateway";
 import type { TeamRosterMember } from "@/lib/gateways/team-roster.gateway";
-import type {
-  CalendarPeriod,
-  TeamTransitions,
-  TeamTransitionsRow,
-} from "@/lib/gateways/team-transitions.gateway";
 import type { TeamSummary } from "@/lib/gateways/teams.gateway";
 import { useI18n } from "@/lib/i18n";
 import { Registration } from "@/lib/registration";
@@ -59,15 +52,12 @@ import { initialSearchParam } from "@/lib/search-params";
 import { usePageHelp } from "@/lib/page-help";
 import { requirePeopleAdministrationReach } from "@/lib/route-guards";
 import { defaultUiAuthorizationPolicy } from "@/lib/scope";
-import { useCareerLevelsByRank, useStore } from "@/lib/store";
+import { useStore } from "@/lib/store";
 import {
-  TeamConfiguration,
   TeamLeadership,
   TeamLeadershipBoard,
   TeamRegistryViewModel,
   TeamStatusFilters,
-  TeamTransitionsViewModel,
-  type TeamPendency,
   type TeamStatusFilter,
 } from "@/lib/view-models";
 
@@ -107,10 +97,6 @@ const ROLE_BADGE_TONE: Record<TeamMemberRole, "done" | "progress" | "neutral"> =
 
 function useTeamRegistryViewModel(): TeamRegistryViewModel {
   return useMemo(() => new TeamRegistryViewModel(defaultUiAuthorizationPolicy), []);
-}
-
-function useTeamTransitionsViewModel(): TeamTransitionsViewModel {
-  return useMemo(() => new TeamTransitionsViewModel(defaultUiAuthorizationPolicy), []);
 }
 
 /**
@@ -159,22 +145,15 @@ function TeamsPage() {
   const help = usePageHelp("teams");
   const user = useCurrentUser();
   const registry = useTeamRegistryViewModel();
-  const comparison = useTeamTransitionsViewModel();
   // Usuários e Times: administrador e gerente com vínculo (`canAdministerPeople`).
   const canAdministerPeople =
     defaultUiAuthorizationPolicy.canAdministerPeople(user) && registry.canCompose(user);
-  const canCompare = comparison.canCompare(user);
 
   if (!canAdministerPeople) {
     return (
       <>
         <PageHeader title={t("teams.title")} description={t("teams.subtitle")} help={help} />
         <EmptyState title={t("teams.restricted")} hint={t("teams.restrictedHint")} />
-        {canCompare && (
-          <div className="mt-6">
-            <TeamTransitionsSection comparison={comparison} />
-          </div>
-        )}
       </>
     );
   }
@@ -191,8 +170,6 @@ function TeamsScreen() {
   const help = usePageHelp("teams");
   const user = useCurrentUser();
   const registry = useTeamRegistryViewModel();
-  const comparison = useTeamTransitionsViewModel();
-  const canCompare = comparison.canCompare(user);
   const canAdminister = registry.canAdminister(user);
   const queryClient = useQueryClient();
   const notifySuccess = useSuccessToast();
@@ -299,13 +276,6 @@ function TeamsScreen() {
                 onRename={setRenaming}
                 onDeactivate={setDeactivating}
               />
-              <TeamConfigurationPendencies
-                teams={registry.filterByStatus(reachable, "active")}
-                leadership={leadership}
-                registry={registry}
-                user={user}
-                onRoster={(team) => setChosenTeamId(team.id)}
-              />
               {chosen && (
                 <TeamRoster
                   key={chosen.id}
@@ -315,7 +285,6 @@ function TeamsScreen() {
                   registry={registry}
                 />
               )}
-              {canCompare && <TeamTransitionsSection comparison={comparison} />}
             </div>
           );
         }}
@@ -530,328 +499,6 @@ function TeamTable({
         </ScrollPane>
       )}
     </SectionCard>
-  );
-}
-
-/**
- * PENDÊNCIAS DE CONFIGURAÇÃO — o que falta para cada time funcionar, com o
- * caminho para revisar (dono, 2026-09-10).
- *
- * Três contadores vieram da sugestão de tela; o QUARTO é o que mais pesa e
- * não estava nela — **time sem régua para todos os níveis de carreira**. Foi
- * a falta da régua do Trainee que derrubou PDI, Avaliação e 1:1 na manhã de
- * 2026-09-09, e a REGRA 19 transferiu esse invariante para o cadastro do
- * time sem deixar nada na tela que mostrasse o furo.
- *
- * ALCANCE: a conta é sobre os times ATIVOS ao alcance de quem lê. Contador
- * que somasse time fora do alcance contaria a existência dele — e a régua
- * desta casa é que o que não se alcança não se anuncia.
- */
-function TeamConfigurationPendencies({
-  teams,
-  leadership,
-  registry,
-  user,
-  onRoster,
-}: {
-  teams: readonly TeamSummary[];
-  leadership: TeamLeadershipBoard;
-  registry: TeamRegistryViewModel;
-  user: SessionUser;
-  onRoster: (team: TeamSummary) => void;
-}) {
-  const { t } = useI18n();
-  const store = useStore();
-  const careerLevels = useCareerLevelsByRank();
-  const canReviewRules = defaultUiAuthorizationPolicy.canConfigureAnyTeamRules(user);
-
-  const configuration = new TeamConfiguration(
-    teams,
-    leadership,
-    store.professionals,
-    store.teamLevelRules,
-    careerLevels,
-    registry,
-  );
-
-  const body = () => {
-    if (!configuration.readable) {
-      return <p className="text-body text-muted-foreground">{t("teams.pending.loading")}</p>;
-    }
-    // ZERO pendência é um ESTADO BOM, não um vazio — e ele se diz nas duas
-    // linhas da régua da casa, não numa caixa em branco.
-    if (configuration.clear) {
-      return <EmptyState title={t("teams.pending.clear")} hint={t("teams.pending.clear.hint")} />;
-    }
-    return (
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {configuration.pendencies().map((pendency) => (
-          <KeyFigureCard
-            key={pendency.kind}
-            size="sm"
-            label={t(`teams.pending.${pendency.kind}`)}
-            value={pendency.count}
-            tone={StatTones.byPending(pendency.count)}
-            caption={
-              <TeamPendencyReview
-                pendency={pendency}
-                canReviewRules={canReviewRules}
-                onRoster={onRoster}
-              />
-            }
-          />
-        ))}
-      </div>
-    );
-  };
-
-  return (
-    <SectionCard
-      title={t("teams.pending.title")}
-      description={t("teams.pending.subtitle")}
-      collapsible
-      storageKey="teams.pending"
-    >
-      {body()}
-    </SectionCard>
-  );
-}
-
-/**
- * O CAMINHO PARA REVISAR de cada pendência — pelo NOME do time, um por um.
- * Um contador sem destino é uma acusação sem endereço: com dois times a lista
- * inteira cabe na legenda, e cada nome é o gesto (abrir o Quadro; ou, na
- * régua, a tela que a configura).
- */
-function TeamPendencyReview({
-  pendency,
-  canReviewRules,
-  onRoster,
-}: {
-  pendency: TeamPendency;
-  canReviewRules: boolean;
-  onRoster: (team: TeamSummary) => void;
-}) {
-  const { t } = useI18n();
-
-  if (pendency.count === 0) return <>{t("teams.pending.ok")}</>;
-
-  if (pendency.reviewedInTeamRules) {
-    if (!canReviewRules) {
-      return (
-        <>
-          {pendency.teams.map((team) => team.name).join(", ")} —{" "}
-          {t("teams.pending.rulesOutOfReach")}
-        </>
-      );
-    }
-    return (
-      <span className="flex flex-wrap gap-2">
-        {pendency.teams.map((team) => (
-          <Button key={team.id} variant="link" size="sm" className="h-auto px-0" asChild>
-            <Link to="/team-rules" aria-label={t("teams.pending.reviewRules", { nome: team.name })}>
-              {team.name}
-            </Link>
-          </Button>
-        ))}
-      </span>
-    );
-  }
-
-  return (
-    <span className="flex flex-wrap gap-2">
-      {pendency.teams.map((team) => (
-        <Button
-          key={team.id}
-          variant="link"
-          size="sm"
-          className="h-auto px-0"
-          aria-label={t("teams.pending.reviewRoster", { nome: team.name })}
-          onClick={() => onRoster(team)}
-        >
-          {team.name}
-        </Button>
-      ))}
-    </span>
-  );
-}
-
-function TeamTransitionsSection({ comparison }: { comparison: TeamTransitionsViewModel }) {
-  const { t } = useI18n();
-  const [period, setPeriod] = useState<CalendarPeriod>(() => comparison.defaultPeriod());
-  const periodIsValid = comparison.periodIsValid(period);
-
-  const transitionsQuery = useQuery({
-    queryKey: comparison.queryKey(period),
-    queryFn: () => teamTransitionsApi.compareTeamTransitions({ period }),
-    staleTime: 60_000,
-    enabled: periodIsValid,
-  });
-
-  return (
-    <SectionCard
-      title={t("teams.transitions.title")}
-      description={t("teams.transitions.subtitle")}
-      collapsible
-      storageKey="teams.transitions"
-    >
-      <div className="mb-4 grid max-w-md gap-3 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="teams-transitions-from">{t("teams.transitions.from")}</Label>
-          <Input
-            id="teams-transitions-from"
-            type="date"
-            value={period.from}
-            onChange={(event) => setPeriod({ ...period, from: event.target.value })}
-          />
-        </div>
-        <div>
-          <Label htmlFor="teams-transitions-to">{t("teams.transitions.to")}</Label>
-          <Input
-            id="teams-transitions-to"
-            type="date"
-            value={period.to}
-            onChange={(event) => setPeriod({ ...period, to: event.target.value })}
-          />
-        </div>
-      </div>
-      {periodIsValid ? (
-        <QuerySection
-          query={transitionsQuery}
-          errorMessage={
-            comparison.readingFailureOf(transitionsQuery.error) ?? t("teams.transitions.error")
-          }
-          skeleton={
-            <p className="text-sm text-muted-foreground">{t("teams.transitions.loading")}</p>
-          }
-        >
-          {(transitions) => (
-            <TeamTransitionsTable transitions={transitions} comparison={comparison} />
-          )}
-        </QuerySection>
-      ) : (
-        <p className="text-sm text-destructive" role="alert">
-          {t("teams.transitions.invalidPeriod")}
-        </p>
-      )}
-    </SectionCard>
-  );
-}
-
-function TeamTransitionsTable({
-  transitions,
-  comparison,
-}: {
-  transitions: TeamTransitions;
-  comparison: TeamTransitionsViewModel;
-}) {
-  const { t, locale } = useI18n();
-  const rows = comparison.ranked(transitions.teams);
-
-  return (
-    <>
-      <DataOriginCallout origin={transitions.dataOrigin} className="mb-3" />
-      {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("teams.transitions.empty")}</p>
-      ) : (
-        <div className="scroll-visible overflow-x-auto">
-          <table className="w-full min-w-[720px] text-sm" aria-label={t("teams.transitions.title")}>
-            <thead>
-              <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th scope="col" className="py-2">
-                  {t("teams.transitions.col.team")}
-                </th>
-                <th scope="col" className="py-2 text-center">
-                  {t("teams.transitions.col.transitions")}
-                </th>
-                <th scope="col" className="py-2 text-center">
-                  {t("teams.transitions.col.pairs")}
-                </th>
-                <th scope="col" className="py-2 text-center">
-                  {t("teams.transitions.col.averageDays")}
-                </th>
-                <th scope="col" className="py-2 text-center">
-                  {t("teams.transitions.col.activePeople")}
-                </th>
-                <th scope="col" className="py-2 text-center">
-                  {t("teams.transitions.col.rate")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <TeamTransitionsRowView
-                  key={row.teamId}
-                  row={row}
-                  comparison={comparison}
-                  locale={locale}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {transitions.withoutRecordedTeam !== null && (
-        <p className="mt-3 text-sm text-muted-foreground">
-          {t("teams.transitions.withoutRecordedTeam", { n: transitions.withoutRecordedTeam })}
-        </p>
-      )}
-    </>
-  );
-}
-
-function TeamTransitionsRowView({
-  row,
-  comparison,
-  locale,
-}: {
-  row: TeamTransitionsRow;
-  comparison: TeamTransitionsViewModel;
-  locale: string;
-}) {
-  const { t } = useI18n();
-  const pairs = comparison.pairsOf(row);
-  const averageDays = comparison.averageDaysOf(row, locale);
-  const rate = comparison.rateOf(row, locale);
-
-  return (
-    <tr className="border-b border-border/60 last:border-0 align-top">
-      {/* Dono (2026-09-06): só o Time à esquerda; o resto centralizado — "Arquitetura 0" não é um nome. */}
-      <td className="py-2 pr-4 font-medium">{row.teamName}</td>
-      <td className="py-2 text-center tabular-nums">{row.transitions}</td>
-      <td className="py-2 text-center">
-        {pairs.length === 0 ? (
-          "—"
-        ) : (
-          <ul className="space-y-0.5">
-            {pairs.map((pair) => (
-              <li key={`${pair.fromRole}→${pair.toRole}`}>
-                {t("teams.transitions.pair", {
-                  de: pair.fromRole,
-                  para: pair.toRole,
-                  n: pair.transitions,
-                })}
-              </li>
-            ))}
-          </ul>
-        )}
-      </td>
-      <td className="py-2 text-center tabular-nums">
-        {averageDays === null ? (
-          "—"
-        ) : (
-          <>
-            {t("teams.transitions.days", { n: averageDays })}
-            <span className="ml-1 text-xs text-muted-foreground">
-              ({t("teams.transitions.measured", { n: row.measuredOrigins, total: row.transitions })}
-              )
-            </span>
-          </>
-        )}
-      </td>
-      <td className="py-2 text-center tabular-nums">{row.activeProfessionals}</td>
-      <td className="py-2 text-center tabular-nums">{rate ?? "—"}</td>
-    </tr>
   );
 }
 

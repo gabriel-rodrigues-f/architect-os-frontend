@@ -46,15 +46,6 @@ export interface CapabilityAverage {
   target: number | undefined;
 }
 
-export interface TrainingNeed {
-  competency: Competency;
-  people: number;
-  avgGap: number;
-  totalGap: number;
-
-  professionalIds: string[];
-}
-
 const byId = <T extends { id: string }>(items: T[]): Map<string, T> =>
   new Map(items.map((item) => [item.id, item]));
 
@@ -354,50 +345,12 @@ export class CapabilitySelectors {
   };
 }
 
-export class TrainingSelectors {
-  constructor(
-    private readonly professional: ProfessionalSelectors,
-    private readonly assessment: AssessmentSelectors,
-  ) {}
-
-  teamTrainingNeeds = (population: Professional[] = this.professional.active): TrainingNeed[] => {
-    const totals = new Map<
-      string,
-      { competency: Competency; people: number; totalGap: number; professionalIds: string[] }
-    >();
-    for (const professional of population) {
-      for (const gap of this.assessment.progressionGapsFor(professional.id)) {
-        if (gap.gap <= 0) continue;
-        let acc = totals.get(gap.item.competencyId);
-        if (!acc) {
-          acc = { competency: gap.competency, people: 0, totalGap: 0, professionalIds: [] };
-          totals.set(gap.item.competencyId, acc);
-        }
-        acc.people += 1;
-        acc.totalGap += gap.gap;
-        acc.professionalIds.push(professional.id);
-      }
-    }
-
-    return [...totals.values()]
-      .map((v) => ({
-        competency: v.competency,
-        people: v.people,
-        avgGap: Number((v.totalGap / v.people).toFixed(1)),
-        totalGap: v.totalGap,
-        professionalIds: v.professionalIds,
-      }))
-      .sort((x, y) => y.totalGap - x.totalGap);
-  };
-}
-
 export function createSelectors(state: AppState) {
   const index = new SelectorIndex(state);
   const professional = new ProfessionalSelectors(state, index);
   const assessment = new AssessmentSelectors(index);
   const development = new DevelopmentSelectors(index);
   const capability = new CapabilitySelectors(state, index, assessment);
-  const training = new TrainingSelectors(professional, assessment);
   const gapConsolidation = new GapConsolidationSelectors(assessment);
 
   return {
@@ -419,7 +372,6 @@ export function createSelectors(state: AppState) {
     teamAverageFor: capability.teamAverageFor,
     consolidateProgressionGaps: gapConsolidation.progression,
     consolidateMasteryGaps: gapConsolidation.mastery,
-    teamTrainingNeeds: training.teamTrainingNeeds,
   };
 }
 

@@ -26,9 +26,6 @@ class NavigationBarrier {
   requireLeadReach: RouteGuard = ({ context }) =>
     this.requireReach(context, (user) => this.policy.canConfigureAnyTeamRules(user));
 
-  requireCalibrationReach: RouteGuard = ({ context }) =>
-    this.requireReach(context, (user) => this.policy.canCalibrate(user));
-
   requireLeadershipReach: RouteGuard = ({ context }) =>
     this.requireReach(context, (user) => this.policy.isLeadership(user));
 
@@ -72,7 +69,6 @@ const navigationBarrier = new NavigationBarrier(defaultUiAuthorizationPolicy);
 
 export const requireSystemOperatorReach = navigationBarrier.requireSystemOperatorReach;
 export const requireLeadReach = navigationBarrier.requireLeadReach;
-export const requireCalibrationReach = navigationBarrier.requireCalibrationReach;
 export const requireLeadershipReach = navigationBarrier.requireLeadershipReach;
 export const requireTeamAnalysisReach = navigationBarrier.requireTeamAnalysisReach;
 export const requireCareerTabsReach = navigationBarrier.requireCareerTabsReach;

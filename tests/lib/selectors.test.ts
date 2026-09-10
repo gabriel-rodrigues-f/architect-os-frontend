@@ -9,7 +9,6 @@ import {
   DevelopmentSelectors,
   emptyState,
   SelectorIndex,
-  TrainingSelectors,
 } from "@/lib/selectors";
 import type { AppState } from "@/lib/api";
 import { fixtureState } from "../helpers/fixtures";
@@ -195,24 +194,14 @@ describe("createSelectors", () => {
     ).toBe(true);
   });
 
-  it("agrega necessidades de treinamento do time ignorando gaps não positivos", () => {
-    const needs = s.teamTrainingNeeds();
-
-    expect(needs.map((n) => n.competency?.id)).toEqual(["security-iam", "cloud-k8s"]);
-    expect(needs[0]).toMatchObject({ people: 2, totalGap: 2, avgGap: 1 });
-    // cloud-serverless está adequado para os dois — não aparece na LNT
-    expect(needs.some((n) => n.competency?.id === "cloud-serverless")).toBe(false);
-  });
-
   it("opera sobre o estado vazio sem quebrar", () => {
     const empty = createSelectors(emptyState);
-    expect(empty.teamTrainingNeeds()).toEqual([]);
     expect(empty.capabilityAverages("ana")).toEqual([]);
   });
 
   /**
-   * EPIC E — quem já saiu do time não conta como time atual: nem na lista
-   * de `activeProfessionals`, nem na Necessidade de Treinamento agregada.
+   * EPIC E — quem já saiu do time não conta como time atual na lista de
+   * `activeProfessionals`.
    * `gapsFor`/`capabilityAverages` continuam funcionando por id explícito (uma
    * tela histórica pode pedir o gap de alguém inativo de propósito).
    */
@@ -226,13 +215,6 @@ describe("createSelectors", () => {
 
     it("activeProfessionals não lista bruno", () => {
       expect(comInativo.activeProfessionals.map((a) => a.id)).toEqual(["ana"]);
-    });
-
-    it("teamTrainingNeeds ignora as lacunas de bruno", () => {
-      const needs = comInativo.teamTrainingNeeds();
-      // Sem o bruno, só a lacuna de segurança da ana permanece.
-      expect(needs.map((n) => n.competency?.id)).toEqual(["security-iam"]);
-      expect(needs[0]).toMatchObject({ people: 1, totalGap: 1 });
     });
 
     it("gapsFor ainda funciona para quem está inativo — histórico continua acessível", () => {
@@ -280,14 +262,6 @@ describe("classes por contexto (instanciadas diretamente)", () => {
     const capability = new CapabilitySelectors(fixtureState, index, assessment);
     const cloud = capability.capabilityAverages("ana").find((d) => d.capability.id === "cloud");
     expect(cloud).toMatchObject({ avg: 4, target: 4 });
-  });
-
-  it("TrainingSelectors agrega necessidade de treinamento a partir de Professional + Assessment", () => {
-    const professionals = new ProfessionalSelectors(fixtureState, index);
-    const assessment = new AssessmentSelectors(index);
-    const training = new TrainingSelectors(professionals, assessment);
-    const needs = training.teamTrainingNeeds();
-    expect(needs.map((n) => n.competency?.id)).toEqual(["security-iam", "cloud-k8s"]);
   });
 });
 
@@ -417,7 +391,7 @@ describe("consolidação de gaps (GapConsolidationSelectors)", () => {
 });
 
 /**
- * F2 (caminhos quentes) — `consolidate` e `teamTrainingNeeds` acumulavam com
+ * F2 (caminhos quentes) — `consolidate` acumulava com
  * `[...acumulador, item]` dentro de laço duplo (profissionais × lacunas), o que
  * recopia a lista inteira a cada pessoa. A troca por acumulação em lugar não
  * pode mudar NADA do resultado — inclusive a ORDEM dentro de `professionalNames`
@@ -426,7 +400,7 @@ describe("consolidação de gaps (GapConsolidationSelectors)", () => {
  * campo a campo, com três pessoas na mesma competência (é preciso k ≥ 3 para
  * uma regressão de ordem aparecer).
  */
-describe("consolidação e LNT — acumulação em laço duplo (F2)", () => {
+describe("consolidação — acumulação em laço duplo (F2)", () => {
   const carla: AppState["professionals"][number] = {
     id: "carla",
     name: "Carla Souza",
@@ -519,33 +493,12 @@ describe("consolidação e LNT — acumulação em laço duplo (F2)", () => {
     expect(linha?.professionalNames).toEqual(["Carla Souza", "Bruno Almeida", "Ana Martins"]);
   });
 
-  it("teamTrainingNeeds devolve exatamente as necessidades de hoje, com os ids na ordem da população", () => {
-    expect(sel.teamTrainingNeeds()).toEqual([
-      {
-        competency: state.competencies.find((c) => c.id === "cloud-k8s"),
-        people: 2,
-        avgGap: 2.5,
-        totalGap: 5,
-        professionalIds: ["bruno", "carla"],
-      },
-      {
-        competency: state.competencies.find((c) => c.id === "security-iam"),
-        people: 3,
-        avgGap: 1.3,
-        totalGap: 4,
-        professionalIds: ["ana", "bruno", "carla"],
-      },
-    ]);
-  });
-
   it("população vazia continua devolvendo lista vazia", () => {
     expect(sel.consolidateProgressionGaps([])).toEqual([]);
-    expect(sel.teamTrainingNeeds([])).toEqual([]);
   });
 
   it("consolidar duas vezes não acumula nada de uma chamada para a outra", () => {
     const primeira = sel.consolidateProgressionGaps(state.professionals);
     expect(sel.consolidateProgressionGaps(state.professionals)).toEqual(primeira);
-    expect(sel.teamTrainingNeeds()).toEqual(sel.teamTrainingNeeds());
   });
 });

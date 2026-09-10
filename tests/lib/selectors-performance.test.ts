@@ -58,7 +58,7 @@ function buildLargeState(): AppState {
     id: `${a.id}-ciclo`,
     professionalId: a.id,
     cycleId: "ciclo",
-    // Completed: gapsFor/teamTrainingNeeds só contam assessment oficial.
+    // Completed: `gapsFor` só conta assessment oficial.
     status: "Completed",
     modelVersion: 1,
     targetCareerLevelId: null,
@@ -101,17 +101,6 @@ describe("selectors em escala", () => {
 
     // 40 profissionais × 300 competências × 12 capacidades. Com busca linear em laço
     // isso passava de segundos; indexado fica na casa das dezenas de ms.
-    expect(elapsed).toBeLessThan(250);
-  });
-
-  it("agrega as necessidades de treinamento do time inteiro rapidamente", () => {
-    const sel = createSelectors(state);
-
-    const started = performance.now();
-    const needs = sel.teamTrainingNeeds();
-    const elapsed = performance.now() - started;
-
-    expect(needs.length).toBeGreaterThan(0);
     expect(elapsed).toBeLessThan(250);
   });
 

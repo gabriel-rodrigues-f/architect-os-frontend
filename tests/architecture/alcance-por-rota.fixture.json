@@ -9,14 +9,6 @@
     "/assessments": {
       "alcance": "autenticado"
     },
-    "/calibration": {
-      "alcance": "calibracao",
-      "guarda": "requireCalibrationReach",
-      "sinal": "canCalibrate",
-      "negativa": "tela-nega",
-      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/calibration.test.tsx"
-    },
     "/capability-map": {
       "alcance": "analise-de-time",
       "guarda": "requireTeamAnalysisReach",
@@ -32,14 +24,6 @@
       "negativa": "tela-nega",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
       "provaDeTela": "tests/routes/cada-fatia-tem-um-dono.test.tsx"
-    },
-    "/compare": {
-      "alcance": "analise-de-time",
-      "guarda": "requireTeamAnalysisReach",
-      "sinal": "canAnalyzeTeam",
-      "negativa": "tela-nega",
-      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
     },
     "/competency-matrix": {
       "alcance": "opera-o-sistema",
@@ -217,14 +201,6 @@
       "negativa": "tela-nega",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
       "provaDeTela": "tests/routes/cada-fatia-tem-um-dono.test.tsx"
-    },
-    "/training-needs": {
-      "alcance": "analise-de-time",
-      "guarda": "requireTeamAnalysisReach",
-      "sinal": "canAnalyzeTeam",
-      "negativa": "tela-nega",
-      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
-      "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
     },
     "/users": {
       "alcance": "gestao-de-pessoas",

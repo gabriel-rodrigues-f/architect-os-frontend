@@ -9,7 +9,6 @@ const {
   professionalsGateway,
   assessmentGateway,
   authGateway,
-  calibrationGateway,
   careerGateway,
   catalogGateway,
   configGateway,
@@ -25,7 +24,6 @@ const {
   teamAllocationGateway,
   teamRosterGateway,
   teamsGateway,
-  teamTransitionsGateway,
   teamTransfersGateway,
   workAssistantsGateway,
 } = defaultContainer;
@@ -46,14 +44,12 @@ export const api = {
 export const authApi = { ...authGateway };
 export const stateContextsApi = { ...stateContextsGateway };
 export const evolutionApi = { ...evolutionGateway };
-export const calibrationApi = { ...calibrationGateway };
 export const analyticsApi = { ...analyticsGateway };
 export const executiveDashboardApi = { ...executiveDashboardGateway };
 export const noticesApi = { ...noticesGateway };
 export const reportsApi = { ...reportsGateway };
 export const teamsApi = { ...teamsGateway };
 export const teamRosterApi = { ...teamRosterGateway };
-export const teamTransitionsApi = { ...teamTransitionsGateway };
 export const teamTransfersApi = { ...teamTransfersGateway };
 export const personAssistantsApi = { ...personAssistantsGateway };
 export const workAssistantsApi = { ...workAssistantsGateway };

@@ -135,7 +135,6 @@ describe.skipIf(!enabled)(`store contra a API real (${API_URL})`, () => {
 
   it("os selectors rodam sobre o payload real sem quebrar", () => {
     const sel = createSelectors(state);
-    expect(sel.teamTrainingNeeds()).toBeInstanceOf(Array);
 
     for (const professional of state.professionals) {
       expect(sel.capabilityAverages(professional.id)).toHaveLength(state.capabilities.length);

@@ -21,10 +21,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import type { SessionUser } from "@/lib/api";
 import { Route as CapabilityMapRoute } from "@/routes/capability-map";
-import { Route as CompareRoute } from "@/routes/compare";
 import { Route as ProgressionRoute } from "@/routes/progression";
 import { Route as GapAnalysisRoute } from "@/routes/gap-analysis";
-import { Route as TrainingNeedsRoute } from "@/routes/training-needs";
 import {
   fixtureSupportUser,
   fixtureAssignedManagerUser,
@@ -65,11 +63,6 @@ const TELAS: ReadonlyArray<{ rota: string; titulo: string; Page: () => ReactNode
     Page: GapAnalysisRoute.options.component as () => ReactNode,
   },
   {
-    rota: "/training-needs",
-    titulo: "Plano de Capacitação",
-    Page: TrainingNeedsRoute.options.component as () => ReactNode,
-  },
-  {
     rota: "/capability-map",
     titulo: "Risco de Concentração",
     Page: CapabilityMapRoute.options.component as () => ReactNode,
@@ -78,11 +71,6 @@ const TELAS: ReadonlyArray<{ rota: string; titulo: string; Page: () => ReactNode
     rota: "/progression",
     titulo: "Prontidão para Progressão",
     Page: ProgressionRoute.options.component as () => ReactNode,
-  },
-  {
-    rota: "/compare",
-    titulo: "Perfis lado a lado",
-    Page: CompareRoute.options.component as () => ReactNode,
   },
 ];
 

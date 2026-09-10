@@ -3,16 +3,15 @@ import { describe, expect, it } from "vitest";
 import en from "@/locales/en.json";
 import pt from "@/locales/pt.json";
 import { Route as CapabilityMapRoute } from "@/routes/capability-map";
-import { Route as CompareRoute } from "@/routes/compare";
 import { Route as NoticesRoute } from "@/routes/notices";
 
 /**
  * Recomendação do PO (revisao-po-2026-08-30) sobre a fila visual do dono: o
  * nome de uma tela deve dizer a PERGUNTA que ela responde, e cada tela tem
- * UM nome. O Comparativo tinha três ("Comparativo do Time" no menu,
- * "Comparativo de Profissionais" no título, "Comparação entre Profissionais"
- * na ajuda); a Cobertura tinha dois e nenhum deles revelava que a pergunta é
- * de risco de concentração ("de quem o time depende").
+ * UM nome. A Cobertura tinha dois, e nenhum deles revelava que a pergunta é
+ * de risco de concentração ("de quem o time depende"). O Comparativo, que
+ * tinha TRÊS e foi o caso que abriu esta rede, saiu do produto em 2026-09-10
+ * — a rede fica pelas telas que ficaram.
  *
  * Sem esta rede, o nome volta a divergir no próximo toque — foi assim que
  * chegou a três.
@@ -25,7 +24,7 @@ const catalogos: [string, Catalogo][] = [
   ["en", en as Catalogo],
 ];
 
-type RotaComNome = typeof CompareRoute | typeof CapabilityMapRoute | typeof NoticesRoute;
+type RotaComNome = typeof CapabilityMapRoute | typeof NoticesRoute;
 
 const metaDe = (route: RotaComNome, chave: "title" | "og:title"): string | undefined => {
   const head = route.options.head as undefined | (() => { meta?: Record<string, string>[] });
@@ -39,16 +38,6 @@ const NOMES_DE_TELA: {
   chaves: string[];
   route: RotaComNome;
 }[] = [
-  {
-    tela: "Comparativo",
-    chaves: [
-      "compare.title",
-      "cap.tabs.comparison",
-      "help.compare.lead.title",
-      "help.compare.member.title",
-    ],
-    route: CompareRoute,
-  },
   {
     tela: "Risco de Concentração",
     chaves: [

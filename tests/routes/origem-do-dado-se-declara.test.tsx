@@ -26,24 +26,22 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import { NoticeBell } from "@/components/app/NoticeBell";
 import { apiPath } from "@/lib/api-path";
-import { calibrationApi, noticesApi } from "@/lib/api";
-import { InMemoryCalibrationGateway } from "@/lib/gateways/calibration.gateway";
+import { noticesApi } from "@/lib/api";
 import { InMemoryNoticesGateway } from "@/lib/gateways/notices.gateway";
-import { Route as CalibrationRoute } from "@/routes/calibration";
 import { Route as NoticesRoute } from "@/routes/notices";
-import {
-  fixtureAssignedManagerUser,
-  fixtureState,
-  fixtureAssignedTechLeadUser,
-} from "../helpers/fixtures";
+import { fixtureState, fixtureAssignedTechLeadUser } from "../helpers/fixtures";
 import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
 
 /**
  * Duas telas ficaram NO AR servidas por gateway in-memory enquanto o backend
- * delas — PRD-02 e PRD-03 — não existia. Quem abria /calibration via
- * distribuição de notas FABRICADA com cara de dado da organização; quem abria
- * o sino via avisos FABRICADOS. Numa demonstração para a empresa isso é pior
- * do que a tela não existir.
+ * delas — PRD-02 e PRD-03 — não existia: quem abria a Calibração de Líderes
+ * via distribuição de notas FABRICADA com cara de dado da organização; quem
+ * abria o sino via avisos FABRICADOS. Numa demonstração para a empresa isso é
+ * pior do que a tela não existir.
+ *
+ * A Calibração saiu do produto em 2026-09-10 (pedido do dono), e com ela a
+ * metade dela deste arquivo. O invariante NÃO saiu: ele é do carimbo, não da
+ * tela, e o sino continua provando-o nas duas direções.
  *
  * O invariante desta rede: a declaração vem de QUEM SABE — o gateway carimba
  * a origem do dado no que devolve — e não de um texto fixo na tela. Por isso
@@ -61,24 +59,7 @@ const fetchMock = vi.fn();
 
 const DECLARACAO = /dados de demonstração/i;
 
-const CalibrationPage = CalibrationRoute.options.component as () => ReactNode;
 const NoticesPage = NoticesRoute.options.component as () => ReactNode;
-
-const calibracaoDaOrganizacao = {
-  cycleId: "2026-h2",
-  overall: { distribution: { "1": 0, "2": 1, "3": 2, "4": 1, "5": 0 }, average: 3 },
-  evaluators: [
-    {
-      userId: "avaliador-real",
-      name: "Avaliadora Real",
-      teamIds: ["time-real"],
-      distribution: { "1": 0, "2": 1, "3": 2, "4": 1, "5": 0 },
-      average: 3,
-      itemsCount: 4,
-      assessmentsCount: 2,
-    },
-  ],
-};
 
 const avisosDaOrganizacao = {
   notices: [
@@ -99,51 +80,14 @@ const avisosDaOrganizacao = {
 /** A frase que a TELA monta com o tipo e as peças (dono, 2026-09-08). */
 const FRASE_DO_SERVIDOR = "Avaliação de Pessoa do servidor segue em rascunho, sem envio";
 
-const calibrationRoute: FetchRoute = (href) =>
-  href.includes(apiPath("/calibration")) ? jsonResponse(calibracaoDaOrganizacao) : undefined;
-
 const noticesRoute: FetchRoute = (href) =>
   href.includes(apiPath("/notices")) ? jsonResponse(avisosDaOrganizacao) : undefined;
 
 const registraGatewayDeDemonstracao = () => {
-  vi.spyOn(calibrationApi, "calibration").mockImplementation(
-    new InMemoryCalibrationGateway().calibration,
-  );
   vi.spyOn(noticesApi, "notices").mockImplementation(
     new InMemoryNoticesGateway(() => Promise.resolve(fixtureAssignedTechLeadUser)).notices,
   );
 };
-
-describe("/calibration declara a origem da distribuição que está mostrando", () => {
-  beforeEach(() => {
-    fetchMock.mockReset();
-    vi.stubGlobal("fetch", fetchMock);
-    mockAppFetch(fetchMock, {
-      user: fixtureAssignedManagerUser,
-      state: fixtureState,
-      routes: [calibrationRoute],
-    });
-  });
-
-  afterEach(() => {
-    cleanup();
-    vi.restoreAllMocks();
-    vi.unstubAllGlobals();
-  });
-
-  it("com o gateway in-memory registrado, a tela diz na cara que o dado é fabricado", async () => {
-    registraGatewayDeDemonstracao();
-    renderWithApp(<CalibrationPage />);
-    await screen.findByText("Marina Lopes");
-    expect(screen.getByText(DECLARACAO)).toBeTruthy();
-  });
-
-  it("com o container de produção, a declaração some sozinha", async () => {
-    renderWithApp(<CalibrationPage />);
-    await screen.findByText("Avaliadora Real");
-    expect(screen.queryByText(DECLARACAO)).toBeNull();
-  });
-});
 
 /**
  * Onda 21 — a sessão daqui passou a ser a do TECH LEAD, não a do admin.

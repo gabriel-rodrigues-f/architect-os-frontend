@@ -24,6 +24,12 @@ import { raizDoFrontend } from "../helpers/catraca";
  *
  * O bloco 8 (Mentoria e 1:1 → Linha do Tempo) entrou depois, quando o arquivo
  * ficou livre: a fatia que tirava a IA daquela tela estava dentro dele.
+ *
+ * TRÊS BLOCOS SAÍRAM em 2026-09-10, com as telas deles (pedido do dono): os
+ * dois do Plano de Capacitação (5 e 6) e o da Calibração de Líderes (12). A
+ * numeração do PEDIDO fica como estava de propósito — ela é a referência da
+ * lista que o dono escreveu, não um índice de array, e renumerar apagaria a
+ * conversa. A régua não mudou; o que sumiu foram três exemplos dela.
  */
 const fonte = (caminho: string) => readFileSync(join(raizDoFrontend, caminho), "utf8");
 
@@ -50,16 +56,6 @@ const BLOCOS: readonly { pedido: string; arquivo: string; rotulo: string }[] = [
     rotulo: "pane.gapTable.label",
   },
   {
-    pedido: "5 — Plano de Capacitação, Competências em Evolução Agregadas",
-    arquivo: join("src", "routes", "training-needs.tsx"),
-    rotulo: "pane.needsAggregated.label",
-  },
-  {
-    pedido: "6 — Plano de Capacitação, Treinamentos Recomendados para o Time",
-    arquivo: join("src", "routes", "training-needs.tsx"),
-    rotulo: "pane.needsRecommended.label",
-  },
-  {
     pedido: "7 — Trilhas de Aprendizagem, a lista de trilhas",
     arquivo: join("src", "routes", "learning-paths.tsx"),
     rotulo: "pane.learningPaths.label",
@@ -83,11 +79,6 @@ const BLOCOS: readonly { pedido: string; arquivo: string; rotulo: string }[] = [
     pedido: "11 — Catálogo de Competências, a lista",
     arquivo: join("src", "routes", "competency-matrix.tsx"),
     rotulo: "pane.competencyCatalog.label",
-  },
-  {
-    pedido: "12 — Calibração de Líderes, os gráficos",
-    arquivo: join("src", "routes", "calibration.tsx"),
-    rotulo: "pane.calibrationCharts.label",
   },
   {
     pedido: "13 — Estrutura de Times, Times Cadastrados",

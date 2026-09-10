@@ -96,11 +96,13 @@ describe("as duas leituras de apoio saíram do produto (dono, 2026-09-10)", () =
     expect({ soEmPt, soEmEn }).toEqual({ soEmPt: [], soEmEn: [] });
   });
 
-  it("o seletor de pessoa da Calibração morreu com a leitura que ele alimentava", () => {
-    const tela = readFileSync(join(raiz, "src", "routes", "calibration.tsx"), "utf8");
-
-    expect(semComentarios(tela)).not.toContain("calibration-assistance-professional");
-  });
+  /*
+   * O caso do SELETOR DE PESSOA da Calibração saiu daqui em 2026-09-10, à
+   * tarde: a tela inteira saiu do produto no mesmo dia (`as-cinco-telas-
+   * sairam.test.ts`), e afirmar que um filtro não está num arquivo que não
+   * existe é rede que passa por vacuidade. A varredura de `src/` acima cobre
+   * o que sobrou desta remoção.
+   */
 
   it("a cópia do contrato de erro do backend perdeu a recusa de alcance da calibração", () => {
     const fixture = readFileSync(

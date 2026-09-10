@@ -2,7 +2,7 @@ import { cleanup, screen, within } from "@testing-library/react";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-/** Mesma razão de training-needs-threshold.test.tsx: `<Link>` exige RouterProvider real. */
+/** `<Link>` exige RouterProvider real; aqui ele é trocado por uma âncora. */
 vi.mock("@tanstack/react-router", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@tanstack/react-router")>();
   return {
@@ -14,11 +14,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as PlansRoute } from "@/routes/development-plans";
-import { Route as NeedsRoute } from "@/routes/training-needs";
-import type { AppState } from "@/lib/api";
-import { apiPath } from "@/lib/api-path";
-import { fixtureState } from "../helpers/fixtures";
-import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../helpers/render-app";
+import { mockAppFetch, renderWithApp } from "../helpers/render-app";
 
 /**
  * Dono, 2026-09-09, com captura: *"o nível da distância está excedendo o
@@ -50,7 +46,6 @@ import { jsonResponse, mockAppFetch, renderWithApp, type FetchRoute } from "../h
 const fetchMock = vi.fn();
 
 const PlansPage = PlansRoute.options.component as () => ReactNode;
-const NeedsPage = NeedsRoute.options.component as () => ReactNode;
 
 function classesOf(element: Element | null | undefined): string {
   return element?.className ?? "";
@@ -72,30 +67,6 @@ function rowOfFirstGapBadgeIn(cardTitle: string): {
   if (!name) throw new Error("linha do selo sem o nome da competência");
   return { row, name, badge };
 }
-
-const settingRecord = (key: string, value: string | number) => ({
-  key,
-  value,
-  valueType: typeof value === "number" ? "int" : "enum",
-  scope: "operational",
-  description: null,
-  updatedAt: "2026-08-26T00:00:00Z",
-  updatedBy: null,
-});
-
-/** A fixture tem duas pessoas com a mesma lacuna: o limiar 2 as torna coletivas. */
-const thresholdTwoRoute: FetchRoute = (href, init) =>
-  href.endsWith(apiPath("/config/settings")) && (init?.method ?? "GET") === "GET"
-    ? jsonResponse({
-        settings: [
-          settingRecord("cycle.cadence", "SEMIANNUAL"),
-          settingRecord("career.minimumQualifiedFloor", 3),
-          settingRecord("training.collectiveInterventionThreshold", 2),
-        ],
-      })
-    : undefined;
-
-const stateWithoutPaths: AppState = { ...fixtureState, learningPaths: [] };
 
 describe("o selo de distância cabe no cartão, e o nome inteiro fica legível", () => {
   beforeEach(() => {
@@ -132,16 +103,5 @@ describe("o selo de distância cabe no cartão, e o nome inteiro fica legível",
 
     expect(name.textContent?.trim().length).toBeGreaterThan(0);
     expect(name.textContent).not.toContain("…");
-  });
-
-  it("Treinamentos Recomendados para o Time: a mesma linha, a mesma régua", async () => {
-    mockAppFetch(fetchMock, { state: stateWithoutPaths, routes: [thresholdTwoRoute] });
-    renderWithApp(<NeedsPage />);
-    await screen.findByText("Treinamentos Recomendados para o Time");
-
-    const { name, badge } = rowOfFirstGapBadgeIn("Treinamentos Recomendados para o Time");
-
-    expect(classesOf(name)).toContain("break-words");
-    expect(classesOf(badge)).toContain("shrink-0");
   });
 });

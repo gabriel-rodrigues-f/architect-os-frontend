@@ -95,16 +95,19 @@ describe("De quem o time depende — o diagnóstico termina em caminho", () => {
     ).toBe("/professionals/ana");
   });
 
-  it("com capacidade em risco, a tela oferece mentoria e necessidades de treinamento", async () => {
+  /*
+   * Eram DUAS saídas até 2026-09-10: mentoria e o Plano de Capacitação. A
+   * segunda saiu com a tela dela; o diagnóstico continua terminando em
+   * caminho, e é o caminho que sobrou que este caso guarda.
+   */
+  it("com capacidade em risco, a tela oferece mentoria", async () => {
     renderWithApp(<CapabilityPage />);
     await screen.findByText("Cloud Architecture");
 
     expect(screen.getByRole("link", { name: /Planejar mentoria/ }).getAttribute("href")).toBe(
       "/mentoring",
     );
-    expect(
-      screen.getByRole("link", { name: /necessidades de treinamento/i }).getAttribute("href"),
-    ).toBe("/training-needs");
+    expect(screen.queryByRole("link", { name: /necessidades de treinamento/i })).toBeNull();
   });
 
   it("sem capacidade em risco, não empurra saída nenhuma", async () => {
