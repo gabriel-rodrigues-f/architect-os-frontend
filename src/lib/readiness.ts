@@ -23,7 +23,10 @@ import type { Gap } from "./selectors";
  * NENHUM CORTE NOVO. As faixas são as de `GAP_SEVERITY` — adequada, recomendada,
  * alta e crítica —, servidas pelo backend (`config/bands`) e com o padrão em
  * `scoring-bands.ts`. Esta classe agrupa, não corta: "Em atenção" é a união das
- * faixas recomendada e alta, que é o que o print do dono mostra com um chip só.
+ * faixas recomendada e alta. Ela nasceu de falta de espaço na linha de chips e
+ * SOBREVIVE por decisão do dono (2026-09-10): quando os cinco estados passaram
+ * a caber numa lista, ele nomeou estes cinco — "Todos, Prontos, Em atenção,
+ * Críticos, Não avaliados" —, e não seis.
  *
  * AUSÊNCIA NÃO É ZERO (radar `cc3b07b`, cartão de distância): quem não tem
  * avaliação concluída no ciclo — ou tem uma sem nenhum item pontuado — é
@@ -40,13 +43,24 @@ const BUCKET_BY_TONE: Record<BandTone, ReadinessBucket> = {
   critical: "critical",
 };
 
-/** O rótulo de cada atalho, no plural que o dono escreveu no print. */
-export const READINESS_CHIP_KEY: Record<ReadinessBucket, MessageKey> = {
-  ready: "team.readiness.chip.ready",
-  attention: "team.readiness.chip.attention",
-  critical: "team.readiness.chip.critical",
-  unknown: "team.readiness.chip.unknown",
+/**
+ * O rótulo de cada estado no FILTRO de prontidão, no plural que o dono
+ * escreveu (2026-09-10): *"Todos, Prontos, Em atenção, Críticos, Não
+ * avaliados"*. Eram chips, um botão por estado; viraram opções de uma lista
+ * só — o que muda é onde o rótulo aparece, não o que ele nomeia.
+ */
+export const READINESS_OPTION_KEY: Record<ReadinessBucket, MessageKey> = {
+  ready: "team.readiness.option.ready",
+  attention: "team.readiness.option.attention",
+  critical: "team.readiness.option.critical",
+  unknown: "team.readiness.option.unknown",
 };
+
+/** A primeira opção da lista: o time inteiro do recorte, sem corte de prontidão. */
+export const READINESS_ALL_OPTION_KEY: MessageKey = "team.readiness.option.all";
+
+/** O valor da opção "Todos" — a ausência de corte, num seletor de uma escolha. */
+export const READINESS_ALL = "all";
 
 export class ReadinessReading {
   private constructor(

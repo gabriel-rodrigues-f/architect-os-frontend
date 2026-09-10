@@ -18,6 +18,18 @@ export class KeyFigureFormatter {
     return whole > 0 ? part / whole : 0;
   }
 
+  /**
+   * A MESMA RAZÃO, NO PISO (dono, 2026-09-10): *"arredonde para baixo e quero
+   * número inteiro, sem vírgula."*
+   *
+   * O piso NÃO é o formato `integer`: `Intl` arredonda ao mais próximo, e
+   * 1,8 vira "2" — a tela afirmaria uma distância maior do que a medida.
+   * A conta continua a mesma; o que desce é só o que se mostra.
+   */
+  static wholeRatio(part: number, whole: number): number {
+    return Math.floor(KeyFigureFormatter.ratio(part, whole));
+  }
+
   private static readonly OPTIONS: Record<KeyFigureFormat, Intl.NumberFormatOptions> = {
     integer: { maximumFractionDigits: 0 },
     decimal: { minimumFractionDigits: 1, maximumFractionDigits: 1 },

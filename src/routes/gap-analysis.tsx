@@ -95,7 +95,13 @@ function TeamPriorities() {
   );
   // Números como afirmação (referência FIAP 2026-09-06, §2 item 2): a distância
   // média por pessoa × competência em evolução, no recorte escolhido.
-  const averageGap = KeyFigureFormatter.ratio(
+  //
+  // INTEIRA, E PARA BAIXO (dono, 2026-09-10): *"arredonde para baixo e quero
+  // número inteiro, sem vírgula."* A conta não mudou — soma das distâncias
+  // sobre soma das pessoas; o que mudou é a apresentação, e ela desce ao piso
+  // em `wholeRatio` porque o formato `integer` sozinho arredondaria 1,8 para
+  // 2 e anunciaria um time mais longe do alvo do que a medida diz.
+  const averageGap = KeyFigureFormatter.wholeRatio(
     priorities.reduce((sum, row) => sum + row.totalGap, 0),
     priorities.reduce((sum, row) => sum + row.people, 0),
   );
@@ -137,7 +143,7 @@ function TeamPriorities() {
             className="mb-6"
             label={t("gap.figure.avgGap")}
             value={averageGap}
-            format="decimal"
+            format="integer"
             caption={t("gap.figure.caption", {
               competencies: priorities.length,
               people: professionals.length,

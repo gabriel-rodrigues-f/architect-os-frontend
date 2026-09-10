@@ -80,6 +80,14 @@ export interface NavItem {
 
   /** Dono (2026-09-06): o item carrega a contagem de transferências A APROVAR por quem está logado. */
   countsPendingTeamTransfers?: boolean;
+
+  /**
+   * Dono (2026-09-10, com captura): o item carrega a contagem de AVISOS NÃO
+   * LIDOS de quem está logado — *"o próprio Central do Usuário → Avisos deve
+   * contabilizar, com um número bem ao lado"*. É o que o sino do cabeçalho
+   * mostrava antes de sair, com a mesma contagem do servidor.
+   */
+  countsUnreadNotices?: boolean;
 }
 
 const OWN_PROFESSIONAL_PARAM = "$professionalId";
@@ -304,7 +312,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     labelKey: "nav.group.userCenter",
     items: [
-      { to: "/notices", labelKey: "nav.notices", icon: Bell },
+      { to: "/notices", labelKey: "nav.notices", icon: Bell, countsUnreadNotices: true },
       /**
        * MINHA CONTA (dono, 2026-09-09, item 7 da proposta de governança —
        * segundo da ordem aprovada). Como os Avisos, sem régua de alcance: é a

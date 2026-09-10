@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { ActiveFilterChip, SortOption } from "@/components/app/DataView";
 import { CommandWithReasonDialog } from "@/components/app/CommandWithReasonDialog";
-import { Chip } from "@/components/app/Chip";
 import { ReadinessBar } from "@/components/app/ReadinessBar";
 import {
   CareerLevelBadge,
@@ -31,8 +30,10 @@ import { EmptySubject } from "@/lib/empty-subject";
 import { useI18n } from "@/lib/i18n";
 import { type Gap } from "@/lib/selectors";
 import {
+  READINESS_ALL,
+  READINESS_ALL_OPTION_KEY,
   READINESS_BUCKETS,
-  READINESS_CHIP_KEY,
+  READINESS_OPTION_KEY,
   ReadinessReading,
   type ReadinessBucket,
 } from "@/lib/readiness";
@@ -56,7 +57,7 @@ interface EnrichedProfessional {
   readiness: ReadinessReading;
 }
 
-/** Um atalho de prontidão: a faixa e exatamente quem cai nela. */
+/** Um estado de prontidão do filtro: a faixa e exatamente quem cai nela. */
 export interface ReadinessShortcut {
   bucket: ReadinessBucket;
   ids: string[];
@@ -256,9 +257,10 @@ export function useTeamRoster(isAdmin: boolean) {
   }, [withoutNameFilter, readinessOf]);
 
   /**
-   * Qual atalho está aceso. `null` com seleção nula é "Todos"; uma seleção
-   * que bate exatamente com um balde é aquele balde; qualquer outra seleção
-   * de nomes não acende chip nenhum — ela é do combo de pessoas.
+   * Qual estado está escolhido no filtro. `null` com seleção nula é "Todos";
+   * uma seleção que bate exatamente com um balde é aquele balde; qualquer
+   * outra seleção de nomes não escolhe estado nenhum — ela é do combo de
+   * pessoas.
    */
   const selectedReadiness: ReadinessBucket | null = useMemo(() => {
     if (nameSelectionChosen === null) return null;
@@ -277,8 +279,34 @@ export function useTeamRoster(isAdmin: boolean) {
       return;
     }
     setNameSelectionChosen(
-      readinessShortcuts.find((atalho) => atalho.bucket === bucket)?.ids ?? [],
+      readinessShortcuts.find((estado) => estado.bucket === bucket)?.ids ?? [],
     );
+  };
+
+  /**
+   * O FILTRO DE PRONTIDÃO (dono, 2026-09-10): *"quero um filtro de status
+   * que, ao clicar, vai me trazer todos os status (Todos, Prontos, Em
+   * atenção, Críticos, Não avaliados)"*.
+   *
+   * Ele NÃO é um filtro novo por dentro: cada opção escreve o filtro de
+   * PESSOAS que a tela já tem, com os ids do balde — é por isso que a
+   * contagem da opção e o tamanho da lista são o mesmo número por
+   * construção, e que "Limpar filtros" também o desfaz. O que morreu foi a
+   * FORMA: um botão por estado crescia com o número de estados, e o dono
+   * chamou isso de anti-escalável.
+   */
+  const readinessValue: string = selectedReadiness ?? READINESS_ALL;
+
+  const readinessOptions = [
+    { value: READINESS_ALL, label: t(READINESS_ALL_OPTION_KEY, { n: withoutNameFilter.length }) },
+    ...readinessShortcuts.map(({ bucket, ids }) => ({
+      value: bucket,
+      label: t(READINESS_OPTION_KEY[bucket], { n: ids.length }),
+    })),
+  ];
+
+  const chooseReadiness = (value: string) => {
+    selectReadiness(value === READINESS_ALL ? null : (value as ReadinessBucket));
   };
 
   const enrichedSorted = useMemo(() => {
@@ -403,64 +431,10 @@ export function useTeamRoster(isAdmin: boolean) {
     readinessTotal: withoutNameFilter.length,
     selectedReadiness,
     selectReadiness,
+    readinessOptions,
+    readinessValue,
+    chooseReadiness,
   };
-}
-
-/**
- * OS ATALHOS DE PRONTIDÃO (dono, 2026-09-09, com referência visual): "Todos
- * (13) · Prontos (3) · Em atenção (2) · Sem dados (1) · Críticos (1)".
- *
- * Eles NÃO são um filtro novo: cada chip escreve o filtro de PESSOAS que a
- * tela já tem, com os ids do balde. Por isso a contagem do chip e o tamanho
- * da lista são o mesmo número por construção — e por isso "Limpar filtros",
- * que a barra já oferece, também os desfaz. Um chip vazio não clica: ele
- * levaria a uma lista vazia sem dizer por quê.
- */
-export function ReadinessShortcuts({
-  shortcuts,
-  total,
-  selected,
-  onSelect,
-}: {
-  shortcuts: readonly ReadinessShortcut[];
-  total: number;
-  selected: ReadinessBucket | null;
-  onSelect: (bucket: ReadinessBucket | null) => void;
-}) {
-  const { t } = useI18n();
-  const chipClass =
-    "transition-fast focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-50";
-  return (
-    <div
-      role="group"
-      aria-label={t("team.readiness.shortcuts")}
-      className="mb-3 flex flex-wrap items-center gap-2"
-    >
-      <Chip asChild tone={selected === null ? "primary" : "neutral"}>
-        <button
-          type="button"
-          aria-pressed={selected === null}
-          onClick={() => onSelect(null)}
-          className={chipClass}
-        >
-          {t("team.readiness.chip.all", { n: total })}
-        </button>
-      </Chip>
-      {shortcuts.map(({ bucket, ids }) => (
-        <Chip key={bucket} asChild tone={selected === bucket ? "primary" : "neutral"}>
-          <button
-            type="button"
-            aria-pressed={selected === bucket}
-            disabled={ids.length === 0}
-            onClick={() => onSelect(bucket)}
-            className={chipClass}
-          >
-            {t(READINESS_CHIP_KEY[bucket], { n: ids.length })}
-          </button>
-        </Chip>
-      ))}
-    </div>
-  );
 }
 
 /**

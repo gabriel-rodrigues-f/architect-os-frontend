@@ -1,7 +1,7 @@
 {
   "src/components/app/ai-shared.tsx": 1,
   "src/components/app/AiExplanation.tsx": 1,
-  "src/components/app/AppShell.tsx": 7,
+  "src/components/app/AppShell.tsx": 4,
   "src/components/app/assessments-shared.tsx": 3,
   "src/components/app/charts.tsx": 1,
   "src/components/app/gap-analysis-shared.tsx": 1,
@@ -10,6 +10,7 @@
   "src/components/app/NavGroupSection.tsx": 1,
   "src/components/app/NavLinkItem.tsx": 1,
   "src/components/app/NoticeList.tsx": 1,
+  "src/components/app/ShellSidebarFooter.tsx": 3,
   "src/components/app/team-shared.tsx": 1,
   "src/components/ui/dialog.tsx": 1,
   "src/components/ui/sheet.tsx": 1,

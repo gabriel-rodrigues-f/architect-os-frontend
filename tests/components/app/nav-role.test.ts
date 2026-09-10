@@ -189,10 +189,22 @@ describe("AppShell — navegação recortada por papel", () => {
    * abaixo) — feedback ao vivo do product owner (Bloco 7) promoveu-a a
    * grupo próprio.
    */
-  it("Painel Executivo, Talentos do Time e Avaliação de Desempenho formam o grupo 'Gestão'", () => {
+  /**
+   * A VISÃO DO SISTEMA entrou no grupo (`84c03f4`, "a conta sobe para 31") e
+   * esta expectativa ficou para trás — o vermelho já estava em main, com o
+   * catálogo certo e o teste velho. Ela é do CATÁLOGO inteiro, sem recorte de
+   * papel; quem esconde a Visão do Sistema de quem não opera o sistema é o
+   * `filterNavGroups`, e isso os testes de alcance abaixo já prendem.
+   */
+  it("Painel Executivo, Visão do Sistema, Talentos do Time e Avaliação de Desempenho formam o grupo 'Gestão'", () => {
     const operationGroup = NAV_GROUPS.find((grupo) => grupo.labelKey === "nav.group.operation");
     expect(operationGroup).toBeTruthy();
-    expect(operationGroup?.items.map((item) => item.to)).toEqual(["/", "/team", "/assessments"]);
+    expect(operationGroup?.items.map((item) => item.to)).toEqual([
+      "/",
+      "/system-view",
+      "/team",
+      "/assessments",
+    ]);
   });
 
   /**

@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { CommandWithReasonDialog } from "@/components/app/CommandWithReasonDialog";
-import { NOTICES_QUERY_KEY } from "@/components/app/NoticeBell";
+import { NOTICES_QUERY_KEY } from "@/hooks";
 import { SectionCard, SectionHeading } from "@/components/app/ui-bits";
 import { Button } from "@/components/ui/button";
 import { usePendingTeamTransfers, useSuccessToast, useToastSubmit } from "@/hooks";

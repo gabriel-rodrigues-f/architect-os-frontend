@@ -76,9 +76,15 @@ describe("números como afirmação nas telas de análise", () => {
     expect(figura.querySelector(".key-figure-value")?.textContent).toMatch(/^\d+$/);
   });
 
-  it("Prioridades de Desenvolvimento afirma a distância média", async () => {
+  /**
+   * Dono (2026-09-10): *"Prioridades de Desenvolvimento > Distância Média:
+   * arredonde para baixo e quero número inteiro, sem vírgula."* A figura
+   * deixa de ter casa decimal — e a vírgula, que era o formato antigo, não
+   * pode voltar por descuido.
+   */
+  it("Prioridades de Desenvolvimento afirma a distância média em número inteiro, sem vírgula", async () => {
     renderWithApp(<GapPage />);
     const figura = await figuraDe("Distância média");
-    expect(figura.querySelector(".key-figure-value")?.textContent).toMatch(/^\d+,\d$/);
+    expect(figura.querySelector(".key-figure-value")?.textContent).toMatch(/^\d+$/);
   });
 });

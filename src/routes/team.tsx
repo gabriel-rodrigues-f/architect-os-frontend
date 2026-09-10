@@ -8,7 +8,6 @@ import {
   OutOfReachScreen,
   PageHeader,
   Pagination,
-  ReadinessShortcuts,
   SingleSelectFilter,
   TeamOrLevelChangeDialog,
   TeamRosterView,
@@ -119,19 +118,6 @@ function TeamRoster() {
         />
       ) : (
         <>
-          {/*
-            Dono (2026-09-09, referência visual): os atalhos em chip com
-            contagem. Eles não são filtro novo — escrevem o filtro de PESSOAS
-            que a barra abaixo já tem, e é por isso que "Limpar filtros" dela
-            também os desfaz.
-          */}
-          <ReadinessShortcuts
-            shortcuts={roster.readinessShortcuts}
-            total={roster.readinessTotal}
-            selected={roster.selectedReadiness}
-            onSelect={roster.selectReadiness}
-          />
-
           <DataViewToolbar
             layout="grid-3"
             resultCount={roster.enrichedSorted.length}
@@ -172,6 +158,22 @@ function TeamRoster() {
                 empty={{ message: t("team.filter.status.empty") }}
               />
             )}
+            {/*
+              A PRONTIDÃO É UM FILTRO, não uma fileira de botões (dono,
+              2026-09-10): *"Remova esse menu novo que inseriu, uma para cada
+              status. Isso é anti-escalável. Ao invés disso, quero um filtro de
+              status."* Ele mora na mesma barra dos outros, no mesmo padrão —
+              e continua escrevendo o filtro de pessoas, de modo que a
+              contagem de cada opção é o tamanho da lista que ela devolve.
+            */}
+            <SingleSelectFilter
+              id="team-filter-readiness"
+              label={t("team.filter.readiness")}
+              options={roster.readinessOptions}
+              value={roster.readinessValue}
+              onChange={roster.chooseReadiness}
+              empty={{ message: t("team.filter.readiness.empty") }}
+            />
             <MultiSelectFilter
               id="team-filter-role"
               label={t("team.filter.role")}

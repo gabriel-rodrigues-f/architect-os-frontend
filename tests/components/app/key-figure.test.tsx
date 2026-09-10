@@ -45,6 +45,25 @@ describe("KeyFigureFormatter — o formato do número-síntese", () => {
     expect(KeyFigureFormatter.ratio(0, 0)).toBe(0);
     expect(KeyFigureFormatter.ratio(4, 5)).toBe(0.8);
   });
+
+  /**
+   * A RAZÃO INTEIRA (dono, 2026-09-10): *"Prioridades de Desenvolvimento >
+   * Distância Média: arredonde para baixo e quero número inteiro, sem
+   * vírgula."*
+   *
+   * "Para baixo" não é o arredondamento do formatador: `format(1.8,
+   * "integer")` devolve "2", porque `Intl` arredonda ao mais próximo. Uma
+   * distância média de 1,8 anunciada como 2 diz que o time está mais longe do
+   * alvo do que a medida diz — o número da tela passaria a afirmar algo que a
+   * conta não afirma. Por isso o piso mora na razão, antes de qualquer
+   * formato, e é ele que este teste prende.
+   */
+  it("razão inteira desce ao piso: 1,8 vira 1, e nunca o 2 do arredondamento", () => {
+    expect(KeyFigureFormatter.wholeRatio(9, 5)).toBe(1);
+    expect(formatador.format(KeyFigureFormatter.ratio(9, 5), "integer")).toBe("2");
+    expect(KeyFigureFormatter.wholeRatio(0, 0)).toBe(0);
+    expect(KeyFigureFormatter.wholeRatio(6, 2)).toBe(3);
+  });
 });
 
 describe("KeyFigure — valor grande, legenda pequena, tendência opcional", () => {
