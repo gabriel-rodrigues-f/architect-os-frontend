@@ -4,6 +4,8 @@ import { toast } from "sonner";
 
 import { api, type AppState } from "./api";
 import { CycleActivation, type CycleSelectionState } from "./cycle-activation";
+import { CyclePreference } from "./cycle-preference";
+import { useAuth } from "./auth";
 import { useI18n } from "./i18n";
 import type { DevelopmentCycle } from "./domain";
 import type { MutationCache } from "./mutation-runner";
@@ -57,6 +59,23 @@ export class ContextScopes {
   static normalize(request: ContextScopeRequest): StateContextRequest {
     return typeof request === "string" ? { name: request } : request;
   }
+
+  /** O estado da tela, com o ciclo em foco resolvido pela escolha da pessoa. */
+  static withCycleInFocus(
+    state: AppState,
+    requests: readonly StateContextRequest[],
+    chosen: string | null,
+  ): AppState {
+    const requested = new Set(requests.map((request) => request.name));
+    if (!requested.has("activeCycle")) return state;
+    const knownCycleIds = requested.has("cycles")
+      ? state.cycles.map((cycle) => cycle.id)
+      : undefined;
+    return {
+      ...state,
+      activeCycleId: CyclePreference.resolve(chosen, state.activeCycleId, knownCycleIds),
+    };
+  }
 }
 
 class ContextScopeCache implements MutationCache<AppState> {
@@ -87,6 +106,38 @@ class ContextScopeCache implements MutationCache<AppState> {
   }
 }
 
+/**
+ * A ESCOLHA DE CICLO DA PESSOA, guardada por conta neste navegador (dono,
+ * 2026-09-10 — "essa mudança deve valer apenas para o seu perfil"). Mora numa
+ * consulta do React Query, e não num `useState`, para que TODAS as telas que
+ * leem o ciclo em foco mudem juntas quando o rodapé muda: o rodapé escreve
+ * na consulta, e o `ContextScope` de cada tela a lê.
+ */
+export function useCyclePreference(): { chosen: string | null; choose: (cycleId: string) => void } {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
+  const queryKey = ["cycle-preference", userId] as const;
+  const preference = useMemo(
+    () => (userId === null ? null : CyclePreference.forBrowser({ id: userId })),
+    [userId],
+  );
+  const query = useQuery({
+    queryKey,
+    queryFn: () => preference?.read() ?? "",
+    staleTime: Infinity,
+    enabled: typeof window !== "undefined",
+  });
+  const chosen = query.data ?? null;
+  return {
+    chosen: chosen === "" ? null : chosen,
+    choose: (cycleId) => {
+      preference?.write(cycleId);
+      queryClient.setQueryData(queryKey, cycleId);
+    },
+  };
+}
+
 export function ContextScope({
   contexts,
   children,
@@ -96,6 +147,7 @@ export function ContextScope({
 }) {
   const queryClient = useQueryClient();
   const { t } = useI18n();
+  const { chosen } = useCyclePreference();
   const requests = contexts.map(ContextScopes.normalize);
   const results = useQueries({
     queries: requests.map((request) => stateContextCatalog.queryOptionsOf(request)),
@@ -108,13 +160,17 @@ export function ContextScope({
   const state =
     pending || failed
       ? null
-      : stateContextCatalog.assemble(
-          emptyState,
+      : ContextScopes.withCycleInFocus(
+          stateContextCatalog.assemble(
+            emptyState,
+            requests,
+            results.map((result) => result.data),
+          ),
           requests,
-          results.map((result) => result.data),
+          chosen,
         );
 
-  const revision = results.map((result) => result.dataUpdatedAt).join("|");
+  const revision = [...results.map((result) => result.dataUpdatedAt), chosen].join("|");
   const contextsKey = requests.map((request) => JSON.stringify(request)).join("|");
   const value = useMemo(
     () =>
@@ -140,6 +196,7 @@ export function ContextScope({
   return <StoreApiContext.Provider value={value}>{children}</StoreApiContext.Provider>;
 }
 
+/** O que o rodapé lê e escreve: o ciclo em foco DA PESSOA, e a lista para escolher. */
 export interface CycleSelection {
   cycles: DevelopmentCycle[];
   activeCycleId: string;
@@ -177,12 +234,38 @@ class CycleSelectionCache implements MutationCache<CycleSelectionState> {
   }
 }
 
+/**
+ * O rodapé: cada perfil escolhe o ciclo que enxerga, e a escolha é dele
+ * (dono, 2026-09-10). Nada vai ao servidor — ativar ciclo é `useCycleActivation`.
+ */
 export function useCycleSelection(): CycleSelection {
-  const queryClient = useQueryClient();
-  const { t } = useI18n();
   const cyclesQuery = useQuery(stateContextCatalog.queryOptionsOf(CYCLES_REQUEST));
   const activeQuery = useQuery(stateContextCatalog.queryOptionsOf(ACTIVE_CYCLE_REQUEST));
+  const { chosen, choose } = useCyclePreference();
+  const cycles = (cyclesQuery.data as DevelopmentCycle[] | undefined) ?? [];
+  const organizationActiveCycleId =
+    (activeQuery.data as { cycleId: string } | undefined)?.cycleId ?? "";
 
+  return {
+    cycles,
+    activeCycleId: CyclePreference.resolve(
+      chosen,
+      organizationActiveCycleId,
+      cyclesQuery.data === undefined ? undefined : cycles.map((cycle) => cycle.id),
+    ),
+    setActiveCycle: choose,
+  };
+}
+
+/**
+ * ATIVAR um ciclo é escrita da ORGANIZAÇÃO — fecha o que estava ativo, para
+ * todo mundo. Vive em Modelo de Carreira → Ciclos de Avaliação → *Ativar*, e
+ * só quem opera o sistema chega lá. É outro gesto, com outro nome e outro
+ * lugar que o seletor do rodapé (dono, 2026-09-10).
+ */
+export function useCycleActivation(): (cycleId: string) => void {
+  const queryClient = useQueryClient();
+  const { t } = useI18n();
   const runner = useMemo(
     () =>
       new MutationRunner<CycleSelectionState>(
@@ -192,16 +275,11 @@ export function useCycleSelection(): CycleSelection {
       ),
     [queryClient, t],
   );
-
-  return {
-    cycles: (cyclesQuery.data as DevelopmentCycle[] | undefined) ?? [],
-    activeCycleId: (activeQuery.data as { cycleId: string } | undefined)?.cycleId ?? "",
-    setActiveCycle: (cycleId) => {
-      const activation = CycleActivation.of(cycleId);
-      runner.optimistic(
-        (state) => activation.appliedTo(state),
-        () => api.setActiveCycle(cycleId),
-      );
-    },
+  return (cycleId) => {
+    const activation = CycleActivation.of(cycleId);
+    runner.optimistic(
+      (state) => activation.appliedTo(state),
+      () => api.setActiveCycle(cycleId),
+    );
   };
 }

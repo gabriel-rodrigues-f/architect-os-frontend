@@ -83,7 +83,7 @@ describe("rótulos apontam para elementos rotuláveis (QA-04)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("AppShell: o ciclo em modo leitura (não-admin) não deixa rótulo órfão no cabeçalho", async () => {
+  it("AppShell: o seletor de ciclo do profissional não deixa rótulo órfão no rodapé", async () => {
     mockAppFetch(fetchMock, { user: fixtureMemberUser });
     renderWithApp(
       <ThemeProvider>
@@ -98,7 +98,9 @@ describe("rótulos apontam para elementos rotuláveis (QA-04)", () => {
     expect(rotulosOrfaos()).toEqual([]);
   });
 
-  it("AppShell: o ciclo continua nomeado para quem enxerga o valor em leitura", async () => {
+  // Dono, 2026-09-10: todo perfil escolhe o ciclo que lê — o profissional
+  // também tem o seletor, e ele continua nomeado "Ciclo" para quem usa leitor de tela.
+  it("AppShell: o seletor de ciclo continua nomeado para o profissional", async () => {
     mockAppFetch(fetchMock, { user: fixtureMemberUser });
     renderWithApp(
       <ThemeProvider>
@@ -110,9 +112,7 @@ describe("rótulos apontam para elementos rotuláveis (QA-04)", () => {
     );
 
     await screen.findByText("conteúdo");
-    // O rótulo "Ciclo" segue visível ao lado do valor — a correção tira a
-    // associação falsa, não o rótulo.
-    expect(screen.getByText("Ciclo")).toBeTruthy();
+    expect(screen.getAllByLabelText("Ciclo").length).toBeGreaterThan(0);
   });
 
   /**

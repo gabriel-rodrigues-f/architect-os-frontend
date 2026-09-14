@@ -30,7 +30,7 @@ import { PaneHeight } from "@/lib/design";
 import { useSuccessToast } from "@/hooks";
 import { useCurrentUser } from "@/lib/auth";
 import { ContextScope, type ContextScopeRequest, SELECTOR_CONTEXTS } from "@/lib/context-scope";
-import { useCycleSelection } from "@/lib/context-scope";
+import { useCycleActivation } from "@/lib/context-scope";
 import { CycleCadenceScheme } from "@/lib/cycle-cadence";
 import { useLabels } from "@/lib/labels";
 import { EmptySubject } from "@/lib/empty-subject";
@@ -106,7 +106,7 @@ function CycleAdministration() {
   const store = useStore();
   const sel = useSelectors();
   const labels = useLabels();
-  const { setActiveCycle: activateCycle } = useCycleSelection();
+  const activateCycle = useCycleActivation();
 
   const isAdmin = defaultUiAuthorizationPolicy.operatesTheSystem(useCurrentUser());
   const [professionalId, setProfessionalId] = useState(store.professionals[0]?.id ?? "");
