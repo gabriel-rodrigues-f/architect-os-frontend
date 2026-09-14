@@ -88,9 +88,8 @@ describe("PDI × vocabulário ACTION_TYPE servido (CFG-06)", () => {
       expect(select.options[0]?.textContent).toBe("Liderar");
     });
 
-    // O modelo 70-20-10 lista as opções ATIVAS do vocabulário servido:
-    // "Shadow" entra (6ª ativa), "Lead" sai.
-    expect(await screen.findByText("6. Shadow")).toBeTruthy();
-    expect(screen.queryByText(/\d+\. Lead$/)).toBeNull();
+    // O bloco "Modelo de Ações de Desenvolvimento" saiu do PDI (dono, 2026-09-10);
+    // o vocabulário segue vivo só onde se escolhe a ação.
+    expect(screen.queryByText("6. Shadow")).toBeNull();
   });
 });

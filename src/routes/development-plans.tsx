@@ -105,7 +105,6 @@ function PlansPage() {
 function PlansScreen() {
   const sel = useSelectors();
 
-  const actionTypes = useVocabulary("ACTION_TYPE");
   const viewModel = useDevelopmentPlansViewModel();
   const [professionalId, setProfessionalId] = useSearchParamString(
     "professionalId",
@@ -252,22 +251,6 @@ function PlansScreen() {
                 personName={professional.name}
               />
             )}
-
-            <SectionCard
-              title={t("pdi.actionModel.title")}
-              description={t("pdi.actionModel.subtitle")}
-            >
-              <div className="flex flex-wrap gap-1.5">
-                {actionTypes.options.map((option, i) => (
-                  <span
-                    key={option.code}
-                    className="rounded-md bg-secondary px-2.5 py-1 text-xs font-medium"
-                  >
-                    {i + 1}. {option.code}
-                  </span>
-                ))}
-              </div>
-            </SectionCard>
           </div>
         </div>
       )}
