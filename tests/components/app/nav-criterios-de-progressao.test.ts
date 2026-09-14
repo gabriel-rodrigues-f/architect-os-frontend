@@ -52,11 +52,12 @@ describe("Critérios de Progressão é um grupo da coluna, não um menu", () => 
     expect(caminhosDe(MODELO_DE_CARREIRA)).toEqual(["/cycles", "/team-rules"]);
   });
 
-  it("a conta da coluna: sem a Elegibilidade — 30 itens em 8 grupos", () => {
+  // 27 depois das remoções de 2026-09-10; 28 em 2026-09-14, com o Perfis lado a lado de volta.
+  it("a conta da coluna: 28 itens em 8 grupos", () => {
     expect({
       grupos: NAV_GROUPS.length,
       itens: NAV_GROUPS.reduce((total, candidato) => total + candidato.items.length, 0),
-    }).toEqual({ grupos: 8, itens: 27 });
+    }).toEqual({ grupos: 8, itens: 28 });
   });
 
   it("o endereço antigo não é mais item de menu — quem o guarda é o redirecionamento", () => {

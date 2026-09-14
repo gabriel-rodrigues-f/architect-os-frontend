@@ -209,6 +209,14 @@
       "negativa": "tela-nega",
       "provaDeNavegacao": "tests/routes/route-guards.test.ts",
       "provaDeTela": "tests/routes/cada-fatia-tem-um-dono.test.tsx"
+    },
+    "/compare": {
+      "alcance": "analise-de-time",
+      "guarda": "requireTeamAnalysisReach",
+      "sinal": "canAnalyzeTeam",
+      "negativa": "tela-nega",
+      "provaDeNavegacao": "tests/routes/route-guards.test.ts",
+      "provaDeTela": "tests/routes/analise-de-time-nega-o-profissional.test.tsx"
     }
   }
 }

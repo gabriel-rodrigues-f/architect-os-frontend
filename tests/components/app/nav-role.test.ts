@@ -208,13 +208,14 @@ describe("AppShell — navegação recortada por papel", () => {
    * próprio item de menu. `nav.capabilities` (rótulo do item único antigo)
    * é reaproveitado como rótulo do GRUPO, sem chave i18n nova.
    */
-  it("Risco de Concentração, Prioridades e Prontidão formam o grupo 'Inteligência de Talentos'", () => {
+  it("Risco de Concentração, Prioridades, Prontidão e Perfis lado a lado formam o grupo 'Inteligência de Talentos'", () => {
     const capabilitiesGroup = NAV_GROUPS.find((grupo) => grupo.labelKey === "nav.capabilities");
     expect(capabilitiesGroup).toBeTruthy();
     expect(capabilitiesGroup?.items.map((item) => item.to)).toEqual([
       "/capability-map",
       "/gap-analysis",
       "/progression",
+      "/compare",
     ]);
   });
 });

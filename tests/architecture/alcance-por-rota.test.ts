@@ -153,7 +153,9 @@ const NOME_DE_GUARDA = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
  * AS CINCO REMOÇÕES DO DONO (2026-09-10): 33 → 30 rotas declaradas. O alcance
  * `calibracao` some INTEIRO do vocabulário — ele existia para uma tela só, a
  * Calibração de Líderes, e sem ela não há o que ele recorte. `analise-de-time`
- * cai de 5 para 3, com o Plano de Capacitação e os Perfis lado a lado.
+ * cai de 5 para 3, com o Plano de Capacitação e os Perfis lado a lado — e
+ * volta a 4 em 2026-09-14, quando os Perfis lado a lado retornam (dono: *"uma
+ * pessoa me disse que é útil ver profissionais lado a lado"*).
  *
  * A ELEGIBILIDADE SAIU DO PRODUTO (dono, 2026-09-10) — −1 em
  * `lead-com-vinculo` (2 → 1): `/eligibility` era a tela de quem rege a régua
@@ -165,7 +167,7 @@ const DISTRIBUICAO_ESPERADA = {
   "opera-o-sistema": 6,
   "lead-com-vinculo": 1,
   lideranca: 3,
-  "analise-de-time": 3,
+  "analise-de-time": 4,
   "ficha-de-carreira": 4,
   "gestao-de-pessoas": 2,
   "metricas-da-plataforma": 1,

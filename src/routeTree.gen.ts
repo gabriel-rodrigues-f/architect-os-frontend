@@ -14,6 +14,7 @@ import { Route as AccountRouteImport } from './routes/account'
 import { Route as AssessmentsRouteImport } from './routes/assessments'
 import { Route as CapabilityMapRouteImport } from './routes/capability-map'
 import { Route as CatalogPolicyRouteImport } from './routes/catalog-policy'
+import { Route as CompareRouteImport } from './routes/compare'
 import { Route as CompetencyMatrixRouteImport } from './routes/competency-matrix'
 import { Route as CyclesRouteImport } from './routes/cycles'
 import { Route as DevelopmentPlansRouteImport } from './routes/development-plans'
@@ -63,6 +64,11 @@ const CapabilityMapRoute = CapabilityMapRouteImport.update({
 const CatalogPolicyRoute = CatalogPolicyRouteImport.update({
   id: '/catalog-policy',
   path: '/catalog-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompareRoute = CompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompetencyMatrixRoute = CompetencyMatrixRouteImport.update({
@@ -202,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/assessments': typeof AssessmentsRoute
   '/capability-map': typeof CapabilityMapRoute
   '/catalog-policy': typeof CatalogPolicyRoute
+  '/compare': typeof CompareRoute
   '/competency-matrix': typeof CompetencyMatrixRoute
   '/cycles': typeof CyclesRoute
   '/development-plans': typeof DevelopmentPlansRoute
@@ -234,6 +241,7 @@ export interface FileRoutesByTo {
   '/assessments': typeof AssessmentsRoute
   '/capability-map': typeof CapabilityMapRoute
   '/catalog-policy': typeof CatalogPolicyRoute
+  '/compare': typeof CompareRoute
   '/competency-matrix': typeof CompetencyMatrixRoute
   '/cycles': typeof CyclesRoute
   '/development-plans': typeof DevelopmentPlansRoute
@@ -266,6 +274,7 @@ export interface FileRoutesById {
   '/assessments': typeof AssessmentsRoute
   '/capability-map': typeof CapabilityMapRoute
   '/catalog-policy': typeof CatalogPolicyRoute
+  '/compare': typeof CompareRoute
   '/competency-matrix': typeof CompetencyMatrixRoute
   '/cycles': typeof CyclesRoute
   '/development-plans': typeof DevelopmentPlansRoute
@@ -300,6 +309,7 @@ export interface FileRouteTypes {
     | '/assessments'
     | '/capability-map'
     | '/catalog-policy'
+    | '/compare'
     | '/competency-matrix'
     | '/cycles'
     | '/development-plans'
@@ -332,6 +342,7 @@ export interface FileRouteTypes {
     | '/assessments'
     | '/capability-map'
     | '/catalog-policy'
+    | '/compare'
     | '/competency-matrix'
     | '/cycles'
     | '/development-plans'
@@ -363,6 +374,7 @@ export interface FileRouteTypes {
     | '/assessments'
     | '/capability-map'
     | '/catalog-policy'
+    | '/compare'
     | '/competency-matrix'
     | '/cycles'
     | '/development-plans'
@@ -396,6 +408,7 @@ export interface RootRouteChildren {
   AssessmentsRoute: typeof AssessmentsRoute
   CapabilityMapRoute: typeof CapabilityMapRoute
   CatalogPolicyRoute: typeof CatalogPolicyRoute
+  CompareRoute: typeof CompareRoute
   CompetencyMatrixRoute: typeof CompetencyMatrixRoute
   CyclesRoute: typeof CyclesRoute
   DevelopmentPlansRoute: typeof DevelopmentPlansRoute
@@ -454,6 +467,13 @@ declare module '@tanstack/react-router' {
       path: '/catalog-policy'
       fullPath: '/catalog-policy'
       preLoaderRoute: typeof CatalogPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compare': {
+      id: '/compare'
+      path: '/compare'
+      fullPath: '/compare'
+      preLoaderRoute: typeof CompareRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/competency-matrix': {
@@ -664,6 +684,7 @@ const rootRouteChildren: RootRouteChildren = {
   AssessmentsRoute: AssessmentsRoute,
   CapabilityMapRoute: CapabilityMapRoute,
   CatalogPolicyRoute: CatalogPolicyRoute,
+  CompareRoute: CompareRoute,
   CompetencyMatrixRoute: CompetencyMatrixRoute,
   CyclesRoute: CyclesRoute,
   DevelopmentPlansRoute: DevelopmentPlansRoute,

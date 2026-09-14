@@ -7,8 +7,9 @@ interface RadarCapability {
 /**
  * Uma SÉRIE do radar e as médias que ela tem, por capacidade.
  *
- * Na ficha, no Painel e no radar de TIME são duas séries fixas — o que se tem
- * hoje e o alvo. O que não muda é a forma da ausência.
+ * No comparativo cada série é uma PESSOA; na ficha, no Painel e no radar de
+ * TIME são duas séries fixas — o que se tem hoje e o alvo. O que não muda é a
+ * forma da ausência.
  *
  * O valor é `number | undefined` de propósito: a origem (`capabilityAverages`)
  * devolve a chave da capacidade mesmo quando não há média, com o valor
@@ -40,6 +41,9 @@ export interface CapabilityMeasure {
   readonly target: number | undefined;
   readonly coverage?: AxisCoverage;
 }
+
+/** A linha do radar comparativo: o eixo e uma coluna por pessoa comparada. */
+export type ComparisonRadarRow = Record<string, string | number | null>;
 
 /** A linha do radar de UMA pessoa: o eixo, o que ela tem hoje, o alvo dela. */
 export interface CurrentAgainstTargetRow {
@@ -76,20 +80,28 @@ const TARGET = "alvo";
  *
  * A classe nasceu para o Comparativo (Perfis lado a lado) e a Visão geral da
  * ficha herdou o mesmo `?? 0`. Em vez de uma segunda régua, a régua ficou UMA
- * — `measuredRows`. O Comparativo saiu do produto em 2026-09-10 e levou junto
- * a forma dele (`RadarRows.of`, uma coluna por pessoa); a régua FICA, com a
- * forma da ficha (`atual` e `alvo`, do jeito que `CapabilityRadar` desenha),
- * e é ela que os três radares restantes usam.
- *
- * Os outros DOIS lugares com o mesmo defeito — o radar do próprio profissional
- * no Painel e o radar de TIME da Análise de Lacunas — entraram na segunda
- * forma, sem terceira régua. O time só pediu uma generalização: o eixo carrega
- * COBERTURA (`AxisCoverage`), porque média de time se lê junto com quantas
- * pessoas ela resume. E ela é OPCIONAL de propósito: quem desenha uma pessoa
- * só não tem o que informar aí.
+ * — `measuredRows` — com duas formas de linha: a do comparativo (`of`, uma
+ * coluna por pessoa) e a da ficha (`atual` e `alvo`, do jeito que
+ * `CapabilityRadar` desenha). O Comparativo saiu em 2026-09-10 e VOLTOU em
+ * 2026-09-14 (dono: *"uma pessoa me disse que é útil ver profissionais lado a
+ * lado"*); a régua nunca saiu.
  */
 export class RadarRows {
   private constructor() {}
+
+  /** O comparativo: uma coluna por pessoa comparada. */
+  static of(
+    capabilities: readonly RadarCapability[],
+    series: readonly RadarSeries[],
+  ): ComparisonRadarRow[] {
+    return RadarRows.measuredRows(capabilities, series, (capability, values) => {
+      const row: ComparisonRadarRow = { capability: capability.name };
+      series.forEach((serie, ordem) => {
+        row[serie.id] = values[ordem] ?? null;
+      });
+      return row;
+    });
+  }
 
   /**
    * Duas séries fixas — o que se tem hoje e o alvo. É a forma da ficha (uma

@@ -21,6 +21,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 import type { SessionUser } from "@/lib/api";
 import { Route as CapabilityMapRoute } from "@/routes/capability-map";
+import { Route as CompareRoute } from "@/routes/compare";
 import { Route as ProgressionRoute } from "@/routes/progression";
 import { Route as GapAnalysisRoute } from "@/routes/gap-analysis";
 import {
@@ -71,6 +72,12 @@ const TELAS: ReadonlyArray<{ rota: string; titulo: string; Page: () => ReactNode
     rota: "/progression",
     titulo: "Prontidão para Progressão",
     Page: ProgressionRoute.options.component as () => ReactNode,
+  },
+  // Voltou em 2026-09-14 (dono): "uma pessoa me disse que é útil ver profissionais lado a lado".
+  {
+    rota: "/compare",
+    titulo: "Perfis lado a lado",
+    Page: CompareRoute.options.component as () => ReactNode,
   },
 ];
 

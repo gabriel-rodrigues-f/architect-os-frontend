@@ -21,8 +21,9 @@ import pt from "@/locales/pt.json";
  *    competências em evolução das pessoas ao alcance. Front-only, portanto, e
  *    a ausência de migração é medição, não esquecimento.
  * 2. **Perfis lado a lado** (`/compare`) — *"remova a tela."* Mesma medição:
- *    sem rota de backend e sem tabela. Lia o mesmo estado das outras telas e
- *    desenhava radar e tabela por `RadarRows.of`.
+ *    sem rota de backend e sem tabela. VOLTOU em 2026-09-14 (dono: *"uma
+ *    pessoa me disse que é útil ver profissionais lado a lado"*) — por isso
+ *    não está mais nas grafias abaixo; a régua cobre as outras quatro.
  * 3. **Calibração de Líderes** (`/calibration`) — *"remova do front, back e
  *    banco toda a estrutura relacionada."* Esta tinha backend (`GET
  *    /calibration`), que saiu na mesma fatia; banco próprio, não — a varredura
@@ -62,15 +63,6 @@ const CHAVES_DO_MENU_ORFAO: string[] = [];
  */
 const AS_GRAFIAS: ReadonlyArray<readonly [string, RegExp]> = [
   ["Plano de Capacitação", /training-needs|trainingNeeds?|TrainingNeed|teamTrainingNeeds/],
-  /*
-   * O `(?<![\w.])` do `compare.` é a fronteira que separa esta tela dos
-   * CICLOS: `cycle.compare.*` é a comparação entre ciclos, que fica. Sem ele
-   * a varredura acusava `src/routes/cycles.tsx`, que não tem nada com isto.
-   */
-  [
-    "Perfis lado a lado",
-    /RadarRows\.of\b|routes\/compare|(?<![\w.])compare\.(title|subtitle|radar|table|view|selector|empty)|help\.compare/,
-  ],
   [
     "Calibração de Líderes",
     /CalibrationViewModel|EvaluatorCalibration|calibrationApi|calibration\.gateway|CalibrationSnapshot|CalibrationEvaluator|requireCalibrationReach|calibrationReservedToManager|pane\.calibrationCharts/,
@@ -123,9 +115,7 @@ describe("as cinco telas saíram do produto (dono, 2026-09-10)", () => {
   it("os arquivos de rota das três telas não existem mais", () => {
     const rotas = readdirSync(join(raiz, "src", "routes"));
 
-    expect(
-      rotas.filter((arquivo) => /^(training-needs|compare|calibration)\./.test(arquivo)),
-    ).toEqual([]);
+    expect(rotas.filter((arquivo) => /^(training-needs|calibration)\./.test(arquivo))).toEqual([]);
   });
 
   for (const idioma of ["pt", "en"] as const) {

@@ -31,5 +31,6 @@ export {
   RadarRows,
   type AxisCoverage,
   type CapabilityMeasure,
+  type ComparisonRadarRow,
   type CurrentAgainstTargetRow,
 } from "./radar-rows.js";

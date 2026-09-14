@@ -48,6 +48,7 @@ type PageHelpRouteKey =
   | "professionalProfile"
   | "professionalEvolution"
   | "teamRules"
+  | "compare"
   | "teams"
   | "notices"
   | "platformMetrics"

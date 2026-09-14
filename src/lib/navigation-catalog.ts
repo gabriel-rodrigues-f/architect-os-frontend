@@ -25,6 +25,7 @@ import {
   UserCog,
   Users,
   Gauge,
+  GitCompare,
 } from "lucide-react";
 
 import type { SessionUser } from "./api";
@@ -168,6 +169,13 @@ export const NAV_GROUPS: NavGroup[] = [
         to: "/progression",
         labelKey: "cap.tabs.progression",
         icon: TrendingUp,
+        teamAnalysisOnly: true,
+      },
+      // Voltou em 2026-09-14 (dono): "uma pessoa me disse que é útil ver profissionais lado a lado".
+      {
+        to: "/compare",
+        labelKey: "cap.tabs.comparison",
+        icon: GitCompare,
         teamAnalysisOnly: true,
       },
     ],

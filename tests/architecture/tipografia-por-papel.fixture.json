@@ -42,6 +42,7 @@
   "src/routes/assessments.tsx": 13,
   "src/routes/capability-map.tsx": 6,
   "src/routes/catalog-policy.tsx": 7,
+  "src/routes/compare.tsx": 3,
   "src/routes/competency-matrix.tsx": 25,
   "src/routes/cycles.tsx": 12,
   "src/routes/development-plans.tsx": 51,
